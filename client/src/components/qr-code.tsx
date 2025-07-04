@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import QRCodeLib from "qrcode";
 
 interface QRCodeProps {
   value: string;
@@ -18,32 +19,18 @@ export default function QRCode({
   useEffect(() => {
     const generateQRCode = async () => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas || !value) return;
 
       try {
-        // Use qrcode library from CDN
-        const QRCodeLib = (window as any).QRCode;
-        if (QRCodeLib) {
-          await QRCodeLib.toCanvas(canvas, value, {
-            width: size,
-            height: size,
-            color: {
-              dark: color,
-              light: backgroundColor,
-            },
-          });
-        } else {
-          // Fallback: draw a simple placeholder
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = backgroundColor;
-            ctx.fillRect(0, 0, size, size);
-            ctx.fillStyle = color;
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('QR Code', size / 2, size / 2);
-          }
-        }
+        await QRCodeLib.toCanvas(canvas, value, {
+          width: size,
+          height: size,
+          color: {
+            dark: color,
+            light: backgroundColor,
+          },
+          margin: 2,
+        });
       } catch (error) {
         console.error('QR code generation error:', error);
         // Fallback: draw error message
