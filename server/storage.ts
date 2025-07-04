@@ -1,6 +1,6 @@
 import { polls, questions, responses, type Poll, type Question, type Response, type InsertPoll, type InsertQuestion, type InsertResponse, type PollWithQuestions, type QuestionWithResponses, type PollResults } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Poll operations
@@ -8,6 +8,7 @@ export interface IStorage {
   getPoll(id: number): Promise<Poll | undefined>;
   getPollByCode(code: string): Promise<Poll | undefined>;
   getPollWithQuestions(id: number): Promise<PollWithQuestions | undefined>;
+  getAllPolls(): Promise<PollWithQuestions[]>;
   updatePollStatus(id: number, isActive: number): Promise<void>;
   
   // Question operations
@@ -51,6 +52,21 @@ export class DatabaseStorage implements IStorage {
       ...poll,
       questions: pollQuestions,
     };
+  }
+
+  async getAllPolls(): Promise<PollWithQuestions[]> {
+    const allPolls = await db.select().from(polls).orderBy(desc(polls.createdAt));
+    const pollsWithQuestions: PollWithQuestions[] = [];
+
+    for (const poll of allPolls) {
+      const pollQuestions = await this.getQuestionsByPollId(poll.id);
+      pollsWithQuestions.push({
+        ...poll,
+        questions: pollQuestions,
+      });
+    }
+
+    return pollsWithQuestions;
   }
 
   async updatePollStatus(id: number, isActive: number): Promise<void> {

@@ -21,6 +21,9 @@ export default function Home() {
               <Link href="/create" className="text-gray-900 hover:text-primary transition-colors">
                 Umfrage erstellen
               </Link>
+              <Link href="/manage" className="text-gray-900 hover:text-primary transition-colors">
+                Umfrage starten
+              </Link>
               <Link href="/join" className="text-gray-900 hover:text-primary transition-colors">
                 Teilnehmen
               </Link>
@@ -71,7 +74,7 @@ export default function Home() {
                 <p className="text-gray-600 mb-6">
                   Starten Sie eine bereits erstellte Umfrage und zeigen Sie den QR-Code an
                 </p>
-                <Link href="/create">
+                <Link href="/manage">
                   <Button className="bg-secondary hover:bg-green-700">
                     Umfrage starten
                   </Button>

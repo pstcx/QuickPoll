@@ -78,6 +78,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get all polls
+  app.get('/api/polls', async (req, res) => {
+    try {
+      const allPolls = await storage.getAllPolls();
+      res.json(allPolls);
+    } catch (error) {
+      console.error('Get all polls error:', error);
+      res.status(500).json({ error: 'Failed to get polls' });
+    }
+  });
+
   // Create poll
   app.post('/api/polls', async (req, res) => {
     try {
