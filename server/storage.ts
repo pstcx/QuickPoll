@@ -1,4 +1,6 @@
 import { polls, questions, responses, type Poll, type Question, type Response, type InsertPoll, type InsertQuestion, type InsertResponse, type PollWithQuestions, type QuestionWithResponses, type PollResults } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Poll operations
@@ -21,45 +23,27 @@ export interface IStorage {
   getPollResults(pollId: number): Promise<PollResults | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private polls: Map<number, Poll>;
-  private questions: Map<number, Question>;
-  private responses: Map<number, Response>;
-  private currentPollId: number;
-  private currentQuestionId: number;
-  private currentResponseId: number;
-
-  constructor() {
-    this.polls = new Map();
-    this.questions = new Map();
-    this.responses = new Map();
-    this.currentPollId = 1;
-    this.currentQuestionId = 1;
-    this.currentResponseId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async createPoll(insertPoll: InsertPoll): Promise<Poll> {
-    const id = this.currentPollId++;
-    const poll: Poll = {
-      ...insertPoll,
-      id,
-      isActive: insertPoll.isActive ?? 0,
-      createdAt: new Date(),
-    };
-    this.polls.set(id, poll);
+    const [poll] = await db
+      .insert(polls)
+      .values(insertPoll)
+      .returning();
     return poll;
   }
 
   async getPoll(id: number): Promise<Poll | undefined> {
-    return this.polls.get(id);
+    const [poll] = await db.select().from(polls).where(eq(polls.id, id));
+    return poll || undefined;
   }
 
   async getPollByCode(code: string): Promise<Poll | undefined> {
-    return Array.from(this.polls.values()).find(poll => poll.code === code);
+    const [poll] = await db.select().from(polls).where(eq(polls.code, code));
+    return poll || undefined;
   }
 
   async getPollWithQuestions(id: number): Promise<PollWithQuestions | undefined> {
-    const poll = this.polls.get(id);
+    const poll = await this.getPoll(id);
     if (!poll) return undefined;
 
     const pollQuestions = await this.getQuestionsByPollId(id);
@@ -70,53 +54,52 @@ export class MemStorage implements IStorage {
   }
 
   async updatePollStatus(id: number, isActive: number): Promise<void> {
-    const poll = this.polls.get(id);
-    if (poll) {
-      poll.isActive = isActive;
-      this.polls.set(id, poll);
-    }
+    await db
+      .update(polls)
+      .set({ isActive })
+      .where(eq(polls.id, id));
   }
 
   async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
-    const id = this.currentQuestionId++;
-    const question: Question = {
-      ...insertQuestion,
-      id,
-      options: insertQuestion.options ?? null,
-    };
-    this.questions.set(id, question);
+    const [question] = await db
+      .insert(questions)
+      .values(insertQuestion)
+      .returning();
     return question;
   }
 
   async getQuestionsByPollId(pollId: number): Promise<Question[]> {
-    return Array.from(this.questions.values())
-      .filter(question => question.pollId === pollId)
-      .sort((a, b) => a.order - b.order);
+    return await db
+      .select()
+      .from(questions)
+      .where(eq(questions.pollId, pollId))
+      .orderBy(questions.order);
   }
 
   async createResponse(insertResponse: InsertResponse): Promise<Response> {
-    const id = this.currentResponseId++;
-    const response: Response = {
-      ...insertResponse,
-      id,
-      createdAt: new Date(),
-    };
-    this.responses.set(id, response);
+    const [response] = await db
+      .insert(responses)
+      .values(insertResponse)
+      .returning();
     return response;
   }
 
   async getResponsesByQuestionId(questionId: number): Promise<Response[]> {
-    return Array.from(this.responses.values())
-      .filter(response => response.questionId === questionId);
+    return await db
+      .select()
+      .from(responses)
+      .where(eq(responses.questionId, questionId));
   }
 
   async getResponsesByPollId(pollId: number): Promise<Response[]> {
-    return Array.from(this.responses.values())
-      .filter(response => response.pollId === pollId);
+    return await db
+      .select()
+      .from(responses)
+      .where(eq(responses.pollId, pollId));
   }
 
   async getPollResults(pollId: number): Promise<PollResults | undefined> {
-    const poll = this.polls.get(pollId);
+    const poll = await this.getPoll(pollId);
     if (!poll) return undefined;
 
     const pollQuestions = await this.getQuestionsByPollId(pollId);
@@ -141,4 +124,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

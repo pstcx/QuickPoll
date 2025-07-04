@@ -25,8 +25,8 @@ QuickPoll is a comprehensive web application designed as a digital survey tool f
 ### Data Storage
 - **Primary Database**: PostgreSQL via Neon Database
 - **ORM**: Drizzle ORM with type-safe queries
-- **Schema**: Three main entities - polls, questions, and responses
-- **Storage Interface**: Abstracted storage layer with in-memory fallback
+- **Schema**: Three main entities - polls, questions, and responses with proper relations
+- **Storage Interface**: DatabaseStorage implementation using PostgreSQL for persistence
 
 ## Key Components
 
@@ -103,5 +103,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Changelog
 
-Changelog:
-- July 04, 2025. Initial setup
+- July 04, 2025: Database integration completed
+  - Added PostgreSQL database with Neon Database provider
+  - Implemented DatabaseStorage replacing in-memory storage
+  - Added Drizzle relations between polls, questions, and responses
+  - Successfully migrated from MemStorage to persistent database storage
+- July 04, 2025: Initial setup

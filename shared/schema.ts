@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, timestamp, json } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -61,3 +62,28 @@ export type PollResults = {
   questions: QuestionWithResponses[];
   participantCount: number;
 };
+
+// Relations
+export const pollsRelations = relations(polls, ({ many }) => ({
+  questions: many(questions),
+  responses: many(responses),
+}));
+
+export const questionsRelations = relations(questions, ({ one, many }) => ({
+  poll: one(polls, {
+    fields: [questions.pollId],
+    references: [polls.id],
+  }),
+  responses: many(responses),
+}));
+
+export const responsesRelations = relations(responses, ({ one }) => ({
+  poll: one(polls, {
+    fields: [responses.pollId],
+    references: [polls.id],
+  }),
+  question: one(questions, {
+    fields: [responses.questionId],
+    references: [questions.id],
+  }),
+}));
