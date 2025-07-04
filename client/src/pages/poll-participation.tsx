@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -15,10 +15,12 @@ interface PollParticipationProps {
   code: string;
 }
 
-export default function PollParticipation({ code }: PollParticipationProps) {
+export default function PollParticipation() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const params = useParams();
+  const code = params.code;
 
   const { data: poll, isLoading, error } = useQuery({
     queryKey: [`/api/polls/code/${code}`],

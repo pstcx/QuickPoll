@@ -53,6 +53,7 @@ export default function CreatePoll() {
       return response.json();
     },
     onSuccess: (poll) => {
+      console.log("Poll created successfully:", poll);
       toast({
         title: "Umfrage erstellt!",
         description: "Ihre Umfrage wurde erfolgreich erstellt.",

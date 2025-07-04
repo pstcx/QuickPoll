@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useEffect } from "react";
+import { useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,9 @@ interface PollResultsProps {
   id: string;
 }
 
-export default function PollResults({ id }: PollResultsProps) {
+export default function PollResults() {
+  const params = useParams();
+  const id = params.id;
   const { data: results, isLoading, error, refetch } = useQuery({
     queryKey: [`/api/polls/${id}/results`],
     enabled: !!id,

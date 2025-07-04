@@ -43,6 +43,7 @@ export class MemStorage implements IStorage {
     const poll: Poll = {
       ...insertPoll,
       id,
+      isActive: insertPoll.isActive ?? 0,
       createdAt: new Date(),
     };
     this.polls.set(id, poll);
@@ -81,6 +82,7 @@ export class MemStorage implements IStorage {
     const question: Question = {
       ...insertQuestion,
       id,
+      options: insertQuestion.options ?? null,
     };
     this.questions.set(id, question);
     return question;

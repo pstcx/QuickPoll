@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useState } from "react";
+import { type PollWithQuestions } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,15 +16,21 @@ interface PollDisplayProps {
   id: string;
 }
 
-export default function PollDisplay({ id }: PollDisplayProps) {
+export default function PollDisplay() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [pollStarted, setPollStarted] = useState(false);
+  const params = useParams();
+  const id = params.id;
 
-  const { data: poll, isLoading, error } = useQuery({
+  console.log("PollDisplay component received id:", id);
+
+  const { data: poll, isLoading, error } = useQuery<PollWithQuestions>({
     queryKey: [`/api/polls/${id}`],
     enabled: !!id,
   });
+
+  console.log("Poll data:", poll, "Error:", error, "Loading:", isLoading);
 
   const updatePollStatusMutation = useMutation({
     mutationFn: async (isActive: number) => {
@@ -64,12 +71,14 @@ export default function PollDisplay({ id }: PollDisplayProps) {
   };
 
   const copyLink = () => {
-    const pollUrl = `${window.location.origin}/poll/${poll.code}/participate`;
-    navigator.clipboard.writeText(pollUrl);
-    toast({
-      title: "Link kopiert!",
-      description: "Der Poll-Link wurde in die Zwischenablage kopiert.",
-    });
+    if (poll) {
+      const pollUrl = `${window.location.origin}/poll/${poll.code}/participate`;
+      navigator.clipboard.writeText(pollUrl);
+      toast({
+        title: "Link kopiert!",
+        description: "Der Poll-Link wurde in die Zwischenablage kopiert.",
+      });
+    }
   };
 
   const viewResults = () => {
@@ -105,7 +114,7 @@ export default function PollDisplay({ id }: PollDisplayProps) {
     );
   }
 
-  const pollUrl = `${window.location.origin}/poll/${poll.code}/participate`;
+  const pollUrl = poll ? `${window.location.origin}/poll/${poll.code}/participate` : "";
 
   return (
     <div className="min-h-screen bg-gray-50">
