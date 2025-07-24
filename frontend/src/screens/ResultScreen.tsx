@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, MessageSquare, Users, TrendingUp } from 'lucide-react';
+import { BarChart3, MessageSquare, Users, TrendingUp, AlertCircle } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 interface MultipleChoiceOption {
   label: string;
@@ -26,6 +27,41 @@ interface FreeTextQuestion {
 type Question = MultipleChoiceQuestion | FreeTextQuestion;
 
 const ResultScreen: React.FC = () => {
+    const { id: pollId } = useParams<{ id: string }>();
+  
+      if(!pollId || pollId.length !== 4) {
+        return (
+          <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <span className="text-red-800 font-medium">
+                  Fehler - Es wurde eine ungültige Poll-ID übergeben.
+                </span>
+              </div>
+            </div>
+        )
+     }
+  
+      const pollNotFound = false;
+      if(pollNotFound) {
+      return (
+        <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <span className="text-red-800 font-medium">
+                Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht mehr verfügbar.
+              </span>
+            </div>
+          </div>
+      )
+    }
+
+
+
   const [animatedHeights, setAnimatedHeights] = useState<Record<string, number>>({});
   const [isAnimating, setIsAnimating] = useState(true);
   const [isEndingPoll, setIsEndingPoll] = useState(false);
@@ -114,7 +150,6 @@ const ResultScreen: React.FC = () => {
 
   const totalParticipants = 150;
   const pollTitle = "Kundenzufriedenheit Q3 2024";
-  const pollId = "2383";
 
   const renderMultipleChoice = (question: MultipleChoiceQuestion) => {
     const maxCount = Math.max(...question.options.map(opt => opt.count));

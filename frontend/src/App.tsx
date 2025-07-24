@@ -19,7 +19,7 @@ function App() {
       <Header
         title='Quick Poll'
         showBackButton={!isHome}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate("/")}
       />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
