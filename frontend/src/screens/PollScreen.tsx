@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckSquare, MessageSquare, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 interface MultipleChoiceQuestion {
   type: 'multiple-choice';
@@ -20,13 +21,123 @@ interface FreeTextQuestion {
 type Question = MultipleChoiceQuestion | FreeTextQuestion;
 
 const PollScreen: React.FC = () => {
+    const { id: pollId } = useParams<{ id: string }>();
+
+    if(!pollId || pollId.length !== 4) {
+      return (
+        <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <span className="text-red-800 font-medium">
+                Fehler - Es wurde eine ungültige Poll-ID übergeben.
+              </span>
+            </div>
+          </div>
+      )
+   }
+   
+       if(!pollId || pollId.length !== 4) {
+         return (
+           <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+               <div className="p-2 bg-red-100 rounded-lg">
+                 <AlertCircle className="w-5 h-5 text-red-600" />
+               </div>
+               <span className="text-red-800 font-medium">
+                   Fehler - Es wurde eine ungültige Poll-ID übergeben.
+                 </span>
+               </div>
+             </div>
+         )
+      }
+
+    const pollNotFound = false;
+    if(pollNotFound) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+              Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht mehr verfügbar.
+            </span>
+          </div>
+        </div>
+    )
+  }
+
+
+
+  //If poll not started, show waiting screen
+  // Sample poll data
+  const pollTitle = "Kundenzufriedenheit Q3 2024";
+  const pollStarted = true; // This should come from API/state
+  const waitingParticipants = 3; // This should come from API/state
+  
+  if (!pollStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-6 py-8">
+            <h1 className="text-4xl font-bold text-gray-900 text-center mb-4">
+              {pollTitle}
+            </h1>
+            <p className="text-gray-600 text-center">
+              Erstellt von Pascal vor 2 Minuten
+            </p>
+          </div>
+        </div>
+
+        {/* Waiting Content */}
+        <div className="max-w-2xl mx-auto px-6 py-12">
+          <div className="bg-white rounded-xl p-8 text-center">
+            {/* Waiting Animation */}
+            <div className="w-14 h-14 mx-auto mb-6 relative">
+              <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Du bist im Warteraum
+            </h2>
+            
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Die Poll wurde noch nicht vom Ersteller gestartet. 
+              Du bist erfolgreich beigetreten und wirst automatisch weitergeleitet, 
+              sobald die Poll beginnt.
+            </p>
+            
+            {/* Participants Counter */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-blue-800 font-semibold">
+                  {waitingParticipants} {waitingParticipants === 1 ? 'weiterer Teilnehmer' : 'weitere Teilnehmer'} bisher
+                </span>
+              </div>
+            </div>
+            
+            {/* Instructions */}
+            <div className="text-sm text-gray-500">
+              <p>💡 Tipp: Lasse diese Seite geöffnet - du wirst automatisch weitergeleitet!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Sample poll data
-  const pollTitle = "Kundenzufriedenheit Q3 2024";
+  // Sample poll data - questions
   const questions: Question[] = [
     {
       type: 'multiple-choice',
@@ -269,7 +380,7 @@ const PollScreen: React.FC = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in {
           from {
             opacity: 0;

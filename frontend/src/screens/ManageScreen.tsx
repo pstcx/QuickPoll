@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Copy, Camera, Info, User, QrCode, Link, Hash, Play, Square, TrendingUp } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Copy, Camera, Info, User, QrCode, Link, Hash, Play, Square, TrendingUp, MessageSquareWarning, FileWarning, AlertCircle } from 'lucide-react';
+import QRCode from "react-qr-code";
 
 interface SurveyDetails {
   title: string;
@@ -8,20 +10,52 @@ interface SurveyDetails {
 }
 
 const ManageScreen: React.FC = () => {
+  const { id: pollId } = useParams<{ id: string }>();
+
+    if(!pollId || pollId.length !== 4) {
+      return (
+        <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <span className="text-red-800 font-medium">
+                Fehler - Es wurde eine ungültige Poll-ID übergeben.
+              </span>
+            </div>
+          </div>
+      )
+   }
+
+    const pollNotFound = false;
+    if(pollNotFound) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+              Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht mehr verfügbar.
+            </span>
+          </div>
+        </div>
+    )
+  }
+  
+  // If poll already started, redirect to DashboardScreen
+  if(1==1+2) {
+     window.location.href = '/my-polls';
+  }
+
   const [surveyDetails, setSurveyDetails] = useState<SurveyDetails>({
     title: 'Test Umfrage',
-    directLink: 'https://testlink.com',
-    pollId: '9876'
+    directLink: `https://quick-poll-eta.vercel.app/poll/${pollId}`,
+    pollId: pollId || '-'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  // Mock router functions for demo
-  const id = 'demo-poll-id';
-  const navigate = (path: string) => {
-    console.log('Navigate to:', path);
-  };
-
   // Beispiel-Teilnehmer
   const participants = [
     //{ id: 1, name: 'Testteilnehmer' }
@@ -34,7 +68,7 @@ const ManageScreen: React.FC = () => {
   };
 
   const handleStartSurvey = () => {
-    if (!isLoading && participants.length > 0) {
+    if (!isLoading) {
       setIsLoading(true);
       setTimeout(() => {
         window.location.href = '/my-polls/' + surveyDetails.pollId + '/result';
@@ -107,7 +141,7 @@ const ManageScreen: React.FC = () => {
               {/* QR Code Area */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-7 mb-5 text-center border-2 border-dashed border-gray-200">
                 <div className="w-56 h-56 mx-auto bg-white rounded-xl shadow-sm flex items-center justify-center border border-gray-200">
-                  <Camera size={56} className="text-gray-400" />
+                  <QRCode value={surveyDetails.directLink} />
                 </div>
               </div>
 
@@ -204,9 +238,9 @@ const ManageScreen: React.FC = () => {
                 {/* Action Button */}
                 <button 
                   onClick={handleStartSurvey}
-                  disabled={isLoading || participants.length === 0}
+                  disabled={isLoading}
                   className={`w-full py-3 px-5 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3 ${
-                    isLoading || participants.length === 0
+                    isLoading
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                   }`}
