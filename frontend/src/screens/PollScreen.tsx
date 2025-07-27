@@ -79,7 +79,6 @@ const PollScreen: React.FC = () => {
   // Sample poll data
   const pollTitle = "Kundenzufriedenheit Q3 2024";
   const pollStarted = true; // This should come from API/state
-  const waitingParticipants = 3; // This should come from API/state
 
   if (!pollStarted) {
     return (
