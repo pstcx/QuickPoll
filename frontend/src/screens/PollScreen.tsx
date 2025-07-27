@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
-import { CheckSquare, MessageSquare, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from "react";
+import {
+  CheckSquare,
+  MessageSquare,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { useParams } from "react-router-dom";
 
 interface MultipleChoiceQuestion {
-  type: 'multiple-choice';
+  type: "multiple-choice";
   id: string;
   title: string;
   options: string[];
@@ -11,7 +16,7 @@ interface MultipleChoiceQuestion {
 }
 
 interface FreeTextQuestion {
-  type: 'free-text';
+  type: "free-text";
   id: string;
   title: string;
   placeholder: string;
@@ -21,40 +26,9 @@ interface FreeTextQuestion {
 type Question = MultipleChoiceQuestion | FreeTextQuestion;
 
 const PollScreen: React.FC = () => {
-    const { id: pollId } = useParams<{ id: string }>();
+  const { id: pollId } = useParams<{ id: string }>();
 
-    if(!pollId || pollId.length !== 4) {
-      return (
-        <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-            </div>
-            <span className="text-red-800 font-medium">
-                Fehler - Es wurde eine ungültige Poll-ID übergeben.
-              </span>
-            </div>
-          </div>
-      )
-   }
-   
-       if(!pollId || pollId.length !== 4) {
-         return (
-           <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
-             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-               <div className="p-2 bg-red-100 rounded-lg">
-                 <AlertCircle className="w-5 h-5 text-red-600" />
-               </div>
-               <span className="text-red-800 font-medium">
-                   Fehler - Es wurde eine ungültige Poll-ID übergeben.
-                 </span>
-               </div>
-             </div>
-         )
-      }
-
-    const pollNotFound = false;
-    if(pollNotFound) {
+  if (!pollId || pollId.length !== 4) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -62,21 +36,51 @@ const PollScreen: React.FC = () => {
             <AlertCircle className="w-5 h-5 text-red-600" />
           </div>
           <span className="text-red-800 font-medium">
-              Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht mehr verfügbar.
-            </span>
-          </div>
+            Fehler - Es wurde eine ungültige Poll-ID übergeben.
+          </span>
         </div>
-    )
+      </div>
+    );
   }
 
+  if (!pollId || pollId.length !== 4) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+            Fehler - Es wurde eine ungültige Poll-ID übergeben.
+          </span>
+        </div>
+      </div>
+    );
+  }
 
+  const pollNotFound = false;
+  if (pollNotFound) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+            Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht
+            mehr verfügbar.
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   //If poll not started, show waiting screen
   // Sample poll data
   const pollTitle = "Kundenzufriedenheit Q3 2024";
   const pollStarted = true; // This should come from API/state
   const waitingParticipants = 3; // This should come from API/state
-  
+
   if (!pollStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -100,30 +104,33 @@ const PollScreen: React.FC = () => {
               <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
               <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
             </div>
-            
+
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Du bist im Warteraum
             </h2>
-            
+
             <p className="text-gray-600 mb-6 leading-relaxed">
-              Die Poll wurde noch nicht vom Ersteller gestartet. 
-              Du bist erfolgreich beigetreten und wirst automatisch weitergeleitet, 
+              Die Poll wurde noch nicht vom Ersteller gestartet. Du bist
+              erfolgreich beigetreten und wirst automatisch weitergeleitet,
               sobald die Poll beginnt.
             </p>
-            
+
             {/* Participants Counter */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-center gap-3">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-blue-800 font-semibold">
-                  {waitingParticipants} {waitingParticipants === 1 ? 'weiterer Teilnehmer' : 'weitere Teilnehmer'} bisher
+                  Weitere Teilnehmer bisher
                 </span>
               </div>
             </div>
-            
+
             {/* Instructions */}
             <div className="text-sm text-gray-500">
-              <p>💡 Tipp: Lasse diese Seite geöffnet - du wirst automatisch weitergeleitet!</p>
+              <p>
+                💡 Tipp: Lasse diese Seite geöffnet - du wirst automatisch
+                weitergeleitet!
+              </p>
             </div>
           </div>
         </div>
@@ -131,51 +138,50 @@ const PollScreen: React.FC = () => {
     );
   }
 
-
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Sample poll data - questions
   const questions: Question[] = [
     {
-      type: 'multiple-choice',
-      id: '1',
-      title: 'Wie bewertest du unseren Service?',
-      options: ['Sehr gut', 'Gut', 'Befriedigend', 'Schlecht'],
-      required: true
+      type: "multiple-choice",
+      id: "1",
+      title: "Wie bewertest du unseren Service?",
+      options: ["Sehr gut", "Gut", "Befriedigend", "Schlecht"],
+      required: true,
     },
     {
-      type: 'free-text',
-      id: '2',
-      title: 'Was können wir verbessern?',
-      placeholder: 'Gib deine Antwort hier ein...',
-      required: false
+      type: "free-text",
+      id: "2",
+      title: "Was können wir verbessern?",
+      placeholder: "Gib deine Antwort hier ein...",
+      required: false,
     },
     {
-      type: 'multiple-choice',
-      id: '3',
-      title: 'Welches Feature nutzt du am häufigsten?',
-      options: ['Dashboard', 'Reports', 'Analytics', 'Settings'],
-      required: true
+      type: "multiple-choice",
+      id: "3",
+      title: "Welches Feature nutzt du am häufigsten?",
+      options: ["Dashboard", "Reports", "Analytics", "Settings"],
+      required: true,
     },
     {
-      type: 'free-text',
-      id: '4',
-      title: 'Weitere Kommentare',
-      placeholder: 'Deine zusätzlichen Kommentare...',
-      required: false
-    }
+      type: "free-text",
+      id: "4",
+      title: "Weitere Kommentare",
+      placeholder: "Deine zusätzlichen Kommentare...",
+      required: false,
+    },
   ];
 
   const handleMultipleChoiceChange = (questionId: string, option: string) => {
     const newAnswers = {
       ...answers,
-      [questionId]: option
+      [questionId]: option,
     };
     setAnswers(newAnswers);
-    
+
     // Update error message with new answers
     updateErrorMessage(newAnswers);
   };
@@ -183,39 +189,43 @@ const PollScreen: React.FC = () => {
   const handleFreeTextChange = (questionId: string, value: string) => {
     const newAnswers = {
       ...answers,
-      [questionId]: value
+      [questionId]: value,
     };
     setAnswers(newAnswers);
-    
+
     // Update error message with new answers
     updateErrorMessage(newAnswers);
   };
 
   const updateErrorMessage = (currentAnswers = answers) => {
-    const requiredQuestions = questions.filter(q => q.required);
-    const unansweredRequired = requiredQuestions.filter(q => {
+    const requiredQuestions = questions.filter((q) => q.required);
+    const unansweredRequired = requiredQuestions.filter((q) => {
       const answer = currentAnswers[q.id];
-      return !answer || (typeof answer === 'string' && answer.trim() === '');
+      return !answer || (typeof answer === "string" && answer.trim() === "");
     });
 
     if (unansweredRequired.length > 0 && errorMessage) {
       // Only update if there was already an error message showing
-      setErrorMessage(`Bitte beantworte alle Pflichtfragen. ${unansweredRequired.length} Frage(n) fehlen noch.`);
+      setErrorMessage(
+        `Bitte beantworte alle Pflichtfragen. ${unansweredRequired.length} Frage(n) fehlen noch.`
+      );
     } else if (unansweredRequired.length === 0) {
       // Clear error message if all required questions are answered
-      setErrorMessage('');
+      setErrorMessage("");
     }
   };
 
   const validateForm = (): boolean => {
-    const requiredQuestions = questions.filter(q => q.required);
-    const unansweredRequired = requiredQuestions.filter(q => {
+    const requiredQuestions = questions.filter((q) => q.required);
+    const unansweredRequired = requiredQuestions.filter((q) => {
       const answer = answers[q.id];
-      return !answer || (typeof answer === 'string' && answer.trim() === '');
+      return !answer || (typeof answer === "string" && answer.trim() === "");
     });
 
     if (unansweredRequired.length > 0) {
-      setErrorMessage(`Bitte beantworte alle Pflichtfragen. ${unansweredRequired.length} Frage(n) fehlen noch.`);
+      setErrorMessage(
+        `Bitte beantworte alle Pflichtfragen. ${unansweredRequired.length} Frage(n) fehlen noch.`
+      );
       return false;
     }
 
@@ -226,7 +236,7 @@ const PollScreen: React.FC = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setErrorMessage('');
+    setErrorMessage("");
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -244,7 +254,9 @@ const PollScreen: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-800">
             {question.title}
             {!question.required && (
-              <span className="text-sm text-gray-500 font-normal ml-2">(optional)</span>
+              <span className="text-sm text-gray-500 font-normal ml-2">
+                (optional)
+              </span>
             )}
           </h3>
         </div>
@@ -281,13 +293,15 @@ const PollScreen: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-800">
             {question.title}
             {!question.required && (
-              <span className="text-sm text-gray-500 font-normal ml-2">(optional)</span>
+              <span className="text-sm text-gray-500 font-normal ml-2">
+                (optional)
+              </span>
             )}
           </h3>
         </div>
 
         <textarea
-          value={answers[question.id] || ''}
+          value={answers[question.id] || ""}
           onChange={(e) => handleFreeTextChange(question.id, e.target.value)}
           placeholder={question.placeholder}
           rows={4}
@@ -304,11 +318,14 @@ const PollScreen: React.FC = () => {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Vielen Dank!</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Vielen Dank!
+          </h2>
           <p className="text-gray-600 leading-relaxed">
-            Deine Antwort(en) wurden erfolgreich abgegeben und werden dem Umfrageersteller in Kürze mitgeteilt.
+            Deine Antwort(en) wurden erfolgreich abgegeben und werden dem
+            Umfrageersteller in Kürze mitgeteilt.
           </p>
-          <p className='mt-2'>Du kannst dieses Fenster jetzt schließen.</p>
+          <p className="mt-2">Du kannst dieses Fenster jetzt schließen.</p>
         </div>
       </div>
     );
@@ -323,7 +340,8 @@ const PollScreen: React.FC = () => {
             {pollTitle}
           </h1>
           <p className="text-gray-600 text-center">
-            {questions.length} Frage{questions.length !== 1 ? 'n' : ''} • {questions.filter(q => q.required).length} davon Pflichtfragen
+            {questions.length} Frage{questions.length !== 1 ? "n" : ""} •{" "}
+            {questions.filter((q) => q.required).length} davon Pflichtfragen
           </p>
         </div>
       </div>
@@ -332,18 +350,21 @@ const PollScreen: React.FC = () => {
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="space-y-8">
           {questions.map((question, index) => (
-            <div key={question.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+            <div
+              key={question.id}
+              className="animate-fade-in"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
                   {index + 1}
                 </div>
                 <div className="h-px bg-gradient-to-r from-blue-200 to-transparent flex-1" />
               </div>
-              
-              {question.type === 'multiple-choice' 
+
+              {question.type === "multiple-choice"
                 ? renderMultipleChoice(question)
-                : renderFreeText(question)
-              }
+                : renderFreeText(question)}
             </div>
           ))}
 
@@ -363,8 +384,8 @@ const PollScreen: React.FC = () => {
               disabled={isSubmitting}
               className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center gap-3 ${
                 isSubmitting
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               }`}
             >
               {isSubmitting ? (
@@ -373,7 +394,7 @@ const PollScreen: React.FC = () => {
                   Wird übermittelt...
                 </>
               ) : (
-                'Antworten abgeben'
+                "Antworten abgeben"
               )}
             </button>
           </div>

@@ -1,5 +1,3 @@
-import React from 'react'
-
 const CreateScreen = () => (
   <div className="p-4">
     <h2 className="text-xl font-bold text-pink-700">Poll Erstellen</h2>
