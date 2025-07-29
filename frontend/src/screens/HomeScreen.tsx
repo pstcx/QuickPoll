@@ -1,32 +1,49 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from "react-router-dom";
+import ActionButton from "./Components/Buttons";
 
 const HomeScreen = () => {
-  const navigate = useNavigate()
-  return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold text-blue-700 mb-6">Willkommen zu QuickPoll</h2>
-      <div className="flex flex-col gap-4 max-w-xs">
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-400 to-teal-500 text-white rounded-lg shadow-md hover:scale-105 hover:from-green-500 hover:to-teal-600 transition transform" onClick={() => navigate('/my-polls')}>
-          <span>📋</span> Meine Polls
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-400 to-red-500 text-white rounded-lg shadow-md hover:scale-105 hover:from-pink-500 hover:to-red-600 transition transform" onClick={() => navigate('/create')}>
-          <span>➕</span> Poll erstellen
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg shadow-md hover:scale-105 hover:from-yellow-500 hover:to-orange-600 transition transform" onClick={() => navigate('/join')}>
-          <span>🗳️</span> Poll beitreten
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-400 to-blue-500 text-white rounded-lg shadow-md hover:scale-105 hover:from-indigo-500 hover:to-blue-600 transition transform" onClick={() => navigate('/my-polls/1234')}>
-          <span>🛠️</span> Poll verwalten (Beispiel)
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-400 to-blue-500 text-white rounded-lg shadow-md hover:scale-105 hover:from-indigo-500 hover:to-blue-600 transition transform" onClick={() => navigate('/my-polls/1234/result')}>
-          <span>📊</span> Poll Ergebnis (Beispiel)
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-lg shadow-md hover:scale-105 hover:from-gray-500 hover:to-gray-700 transition transform" onClick={() => navigate('/poll/1234')}>
-          <span>🔎</span> Poll ansehen (Beispiel)
-        </button>
-      </div>
-    </div>
-  )
-}
+  const navigate = useNavigate();
 
-export default HomeScreen
+  return (
+    //</div><div className="min-h-screen bg-[url('homescreen_img.jpeg')] bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col items-center justify-center px-4">
+      {/* Logo oder App-Name */}
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-extrabold text-blue-700">🗳️ QuickPoll</h1>
+        <p className="mt-2 text-gray-600 text-lg max-w-md mx-auto">
+          Erstelle unkompliziert Umfragen, teile sie mit anderen und sieh dir
+          die Ergebnisse in Echtzeit an.
+          Simply simple.
+        </p>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl mt-6">
+        <ActionButton
+          icon="➕"
+          label="Poll erstellen"
+          gradientFrom="from-green-400"
+          gradientTo="to-teal-500"
+          onClick={() => navigate("/create")}
+        />
+        <ActionButton
+          icon="🗳️"
+          label="Poll beitreten"
+          gradientFrom="from-yellow-400"
+          gradientTo="to-orange-500"
+          onClick={() => navigate("/join")}
+        />
+        <ActionButton
+          icon="📋"
+          label="Meine Polls"
+          gradientFrom="from-blue-400"
+          gradientTo="to-indigo-500"
+          onClick={() => navigate("/my-polls")}
+        />
+      </div>
+
+    </div>
+  );
+};
+
+export default HomeScreen;
