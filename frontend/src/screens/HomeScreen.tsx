@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import ActionButton from "./Components/Buttons";
+import ActionButton from "./Components/ActionButton";
 
 const HomeScreen = () => {
   const navigate = useNavigate();
