@@ -9,11 +9,10 @@ const HomeScreen = () => {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col items-center justify-center px-4">
       {/* Logo oder App-Name */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-extrabold text-blue-700">🗳️ QuickPoll</h1>
+        <h1 className="text-4xl font-extrabold text-[#093a80]">🗳️ QuickPoll</h1>
         <p className="mt-2 text-gray-600 text-lg max-w-md mx-auto">
           Erstelle unkompliziert Umfragen, teile sie mit anderen und sieh dir
-          die Ergebnisse in Echtzeit an.
-          Simply simple.
+          die Ergebnisse in Echtzeit an. Simply simple.
         </p>
       </div>
 
@@ -41,7 +40,6 @@ const HomeScreen = () => {
           onClick={() => navigate("/my-polls")}
         />
       </div>
-
     </div>
   );
 };

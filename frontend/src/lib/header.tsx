@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronLeft } from 'lucide-react';
+import React from "react";
+import { ChevronLeft } from "lucide-react";
 
 interface HeaderProps {
   title: string;
@@ -7,13 +7,13 @@ interface HeaderProps {
   showBackButton?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  title, 
-  onBack, 
-  showBackButton = true 
+const Header: React.FC<HeaderProps> = ({
+  title,
+  onBack,
+  showBackButton = true,
 }) => {
   return (
-    <header className="bg-white border-b border-gray-200 w-full h-16 flex items-center pl-12">
+    <header className="bg-[#093a80] border-b border-gray-200 w-full h-16 flex items-center pl-12">
       <div className="flex items-center w-full">
         {showBackButton && (
           <button
@@ -25,9 +25,7 @@ const Header: React.FC<HeaderProps> = ({
             <span className="text-sm font-medium">Zurück</span>
           </button>
         )}
-        <h1 className="text-lg font-semibold text-gray-900">
-          {title}
-        </h1>
+        <h1 className="text-lg font-semibold text-white">{title}</h1>
       </div>
     </header>
   );
