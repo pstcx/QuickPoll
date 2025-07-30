@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import surveyData from "./data/surveys.json"; // DATENBANK: Wird durch API-Import ersetzt
-import "./App.css";
+/*import surveyData from "./data/surveys.json"; // DATENBANK: Wird durch API-Import ersetzt */
+//import "./App.css";
 import calendarIcon from "./assets/icons/calendar.svg";
 import questionIcon from "./assets/icons/question.svg";
 
