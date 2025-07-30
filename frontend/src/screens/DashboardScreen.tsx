@@ -9,6 +9,13 @@ const DashboardScreen = () => {
   const [surveys, setSurveys] = useState([]);
   // const [isLoading, setIsLoading] = useState(false);
   // const [error, setError] = useState(null);
+=======
+/*const DashboardScreen = () => (
+  <div className="p-4">
+    <h2 className="text-xl font-bold text-teal-700">Meine Umfragen</h2>
+    <p>Hier findest du deine eigenen Umfragen.</p>
+  </div>
+) +/
 
   useEffect(() => {
     // DATENBANK: Wird durch echten API-Call ersetzt

@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Copy, Camera, Info, User, QrCode, Link, Hash, Play, Square, TrendingUp, MessageSquareWarning, FileWarning, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { useParams } from "react-router-dom";
+import {
+  Copy,
+  Info,
+  User,
+  QrCode,
+  Link,
+  Play,
+  TrendingUp,
+  AlertCircle,
+} from "lucide-react";
 import QRCode from "react-qr-code";
 
 interface SurveyDetails {
@@ -12,23 +21,7 @@ interface SurveyDetails {
 const ManageScreen: React.FC = () => {
   const { id: pollId } = useParams<{ id: string }>();
 
-    if(!pollId || pollId.length !== 4) {
-      return (
-        <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-            </div>
-            <span className="text-red-800 font-medium">
-                Fehler - Es wurde eine ungültige Poll-ID übergeben.
-              </span>
-            </div>
-          </div>
-      )
-   }
-
-    const pollNotFound = false;
-    if(pollNotFound) {
+  if (!pollId || pollId.length !== 4) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -36,25 +29,42 @@ const ManageScreen: React.FC = () => {
             <AlertCircle className="w-5 h-5 text-red-600" />
           </div>
           <span className="text-red-800 font-medium">
-              Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht mehr verfügbar.
-            </span>
-          </div>
+            Fehler - Es wurde eine ungültige Poll-ID übergeben.
+          </span>
         </div>
-    )
-  }
-  
-  // If poll already started, redirect to DashboardScreen
-  if(1==1+2) {
-     window.location.href = '/my-polls';
+      </div>
+    );
   }
 
-  const [surveyDetails, setSurveyDetails] = useState<SurveyDetails>({
-    title: 'Test Umfrage',
+  const pollNotFound = false;
+  if (pollNotFound) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+            Fehler - Die Poll mit der ID {pollId} existiert nicht oder ist nicht
+            mehr verfügbar.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // If poll already started, redirect to DashboardScreen
+  if (1 == 1 + 2) {
+    window.location.href = "/my-polls";
+  }
+
+  const [surveyDetails] = useState<SurveyDetails>({
+    title: "Test Umfrage",
     directLink: `https://quick-poll-eta.vercel.app/poll/${pollId}`,
-    pollId: pollId || '-'
+    pollId: pollId || "-",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [isStarted, setIsStarted] = useState(false);
+  const [isStarted] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   // Beispiel-Teilnehmer
   const participants = [
@@ -71,7 +81,7 @@ const ManageScreen: React.FC = () => {
     if (!isLoading) {
       setIsLoading(true);
       setTimeout(() => {
-        window.location.href = '/my-polls/' + surveyDetails.pollId + '/result';
+        window.location.href = "/my-polls/" + surveyDetails.pollId + "/result";
       }, 1000);
     }
   };
@@ -119,7 +129,8 @@ const ManageScreen: React.FC = () => {
               <Info className="w-5 h-5 text-blue-600" />
             </div>
             <span className="text-blue-800 font-medium">
-              Scanne den QR-Code oder nutze den direkten Link, um zur Umfrage zu gelangen.
+              Scanne den QR-Code oder nutze den direkten Link, um zur Umfrage zu
+              gelangen.
             </span>
           </div>
         </div>
@@ -137,7 +148,7 @@ const ManageScreen: React.FC = () => {
                   QR-Code scannen
                 </h2>
               </div>
-              
+
               {/* QR Code Area */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-7 mb-5 text-center border-2 border-dashed border-gray-200">
                 <div className="w-56 h-56 mx-auto bg-white rounded-xl shadow-sm flex items-center justify-center border border-gray-200">
@@ -146,7 +157,8 @@ const ManageScreen: React.FC = () => {
               </div>
 
               <p className="text-gray-600 text-center leading-relaxed">
-                Scanne den QR-Code mit deinem Smartphone, um direkt zur Umfrage zu gelangen.
+                Scanne den QR-Code mit deinem Smartphone, um direkt zur Umfrage
+                zu gelangen.
               </p>
             </div>
 
@@ -189,9 +201,9 @@ const ManageScreen: React.FC = () => {
                     <button
                       onClick={handleCopyLink}
                       className={`px-3 py-2 border-l border-gray-300 transition-colors duration-200 ${
-                        copySuccess 
-                          ? 'bg-green-100 text-green-600' 
-                          : 'hover:bg-gray-100 text-gray-500'
+                        copySuccess
+                          ? "bg-green-100 text-green-600"
+                          : "hover:bg-gray-100 text-gray-500"
                       }`}
                     >
                       <Copy size={16} />
@@ -228,7 +240,8 @@ const ManageScreen: React.FC = () => {
                       <>
                         <User className="w-4 h-4 text-blue-600" />
                         <span className="text-gray-700 font-medium">
-                          {participants.length} Teilnehmer wart{participants.length > 1 ? 'en' : 'et'}...
+                          {participants.length} Teilnehmer wart
+                          {participants.length > 1 ? "en" : "et"}...
                         </span>
                       </>
                     )}
@@ -236,13 +249,13 @@ const ManageScreen: React.FC = () => {
                 </div>
 
                 {/* Action Button */}
-                <button 
+                <button
                   onClick={handleStartSurvey}
                   disabled={isLoading}
                   className={`w-full py-3 px-5 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3 ${
                     isLoading
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   }`}
                 >
                   {isLoading ? (
