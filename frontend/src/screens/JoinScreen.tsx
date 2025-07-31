@@ -1,122 +1,78 @@
-import React from "react";
-//import "./App.css";
-// import { useNavigate } from "react-router-dom"; // Entkommentieren, wenn Router eingerichtet
+import React, { useState } from 'react';
 
 const JoinScreen = () => {
-  /*
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  */
+  // --- State ---------------------------------------------------------------
+  const [pollIdInput, setPollIdInput] = useState('');
+  const [pollIdInt, setPollIdInt] = useState<number | null>(null);
 
-/* const JoinScreen = () => (
-  <div className="p-4">
-    <h2 className="text-xl font-bold text-yellow-700">Umfrage beitreten </h2>
-    <p>Hier kannst du einer Umfrage beitreten.</p>
-  </div>
-) */
+  // --- Funktionen ----------------------------------------------------------
 
-  /*
-  // Zurück-Button Funktion
-  const handleBack = () => {
-    navigate(-1); // Oder navigate("/zielseite");
-  };
-  */
+  const pollBeitretenBtn = () => {
+    const parsed = parseInt(pollIdInput, 10);
 
-  /*
-  // Poll-ID Validierung und Weiterleitung
-  const handleJoinPoll = async () => {
-    const pollId = (document.getElementById("pollId") as HTMLInputElement).value.trim();
-
-    if (!pollId) {
-      setError("Bitte Poll-ID eingeben");
+    if (isNaN(parsed)) {
+      console.log('Ungültige Eingabe – keine Zahl');
       return;
     }
 
-    setIsLoading(true);
-    setError("");
-
-    try {
-      // API-Call zur Überprüfung der Poll-ID
-      const response = await fetch(`/api/polls/validate/${pollId}`);
-
-      if (!response.ok) {
-        throw new Error("Umfrage nicht gefunden");
-      }
-
-      const data = await response.json();
-
-      // Weiterleitung zur Umfrageseite
-      navigate(`/poll/${data.pollId}`, { 
-        state: { pollData: data } // Optional: Daten mitnehmen
-      });
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Serverfehler");
-    } finally {
-      setIsLoading(false);
-    }
+    setPollIdInt(parsed);
+    console.log('Gespeicherter Poll-Code (Integer):', parsed);
   };
-  */
 
+  const qrCodeScannenBtn = () => {
+    console.log('QR-Code-Scannen-Button geklickt');
+  };
+
+  // --- Rückgabe der UI -----------------------------------------------------
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <nav className="navbar">
-        <button
-          className="return-button"
-          // onClick={handleBack}
-          // disabled={isLoading}
-        >
-          {/* {isLoading ? "..." : "Zurück"} */}
-          Zurück
-        </button>
-        <h1 className="navbar-title">An Umfrage Teilnehmen</h1>
-      </nav>
+    <div>
+      <div className="p-4">
+        <h2 className="text-xl font-bold text-yellow-700">Umfrage beitreten</h2>
+      </div>
 
-      <div className="content">
-        <div className="content-title">
+      <div className="flex flex-col items-center box-border p-4 justify-start">
+        <div className="text-[#555555] mb-4">
           <h4>Geben Sie die Poll-ID ein oder scannen Sie den QR-Code</h4>
         </div>
 
-        <div className="content-card">
-          <h3 className="card-title">Umfrage beitreten</h3>
+        <div className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] w-[800px] h-auto flex flex-col gap-6 px-10 py-[50px] rounded-lg">
+          <h3 className="text-2xl font-semibold text-gray-900 text-center m-0">
+            Umfrage beitreten
+          </h3>
 
-          <div className="input-group">
-            <label className="input-label" htmlFor="pollId">
+          <div className="w-full max-w-full flex flex-col gap-1">
+            <label htmlFor="pollId" className="text-base text-gray-500 text-left m-0">
               Poll-ID eingeben
             </label>
-            <div className="input-row">
+
+            <div className="flex gap-3">
               <input
                 id="pollId"
                 type="text"
                 placeholder="123456"
-                className="input-field"
-                // onKeyPress={(e) => e.key === "Enter" && handleJoinPoll()}
-                // disabled={isLoading}
+                value={pollIdInput}
+                onChange={(e) => setPollIdInput(e.target.value)}
+                className="flex-1 border border-gray-300 text-base px-4 py-2 rounded-md border-solid focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.3)] outline-none"
               />
               <button
-                className="input-button"
-                // onClick={handleJoinPoll}
-                // disabled={isLoading}
+                onClick={pollBeitretenBtn}
+                className="bg-blue-600 text-white font-semibold text-sm px-5 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
-                {/* {isLoading ? "Wird überprüft..." : "Beitreten"} */}
                 Beitreten
               </button>
             </div>
           </div>
 
-          {/* Fehlermeldung */}
           {/* {error && <div className="text-red-500 mt-2">{error}</div>} */}
 
-          <p className="card-text">
+          <p className="text-gray-500 text-base text-center m-0">
             -------------------- oder --------------------
           </p>
 
           <button
-            className="main-button"
-            // disabled={isLoading}
+            onClick={qrCodeScannenBtn}
+            className="bg-emerald-600 text-white font-semibold text-sm px-5 py-2 rounded-md hover:bg-emerald-700 transition-colors w-[200px] self-center"
           >
-            {/* {isLoading ? "Bitte warten..." : "QR-Code scannen"} */}
             QR-Code scannen
           </button>
         </div>
