@@ -8,7 +8,7 @@ const MultipleChoiceScreen = () => {
     setOptions([...options, ""]);
   };
 
-  const handleChangeOption = (index, value) => {
+  const handleChangeOption = (index: number, value: string) => {
     const newOptions = [...options];
     newOptions[index] = value;
     setOptions(newOptions);

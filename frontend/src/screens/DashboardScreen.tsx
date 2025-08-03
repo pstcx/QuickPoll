@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // Importiere das Bild für den QR-Code
 import qrCodePlatzhalter from '../assets/qr_code_platzhalter.png'; // Pfad ggf. anpassen

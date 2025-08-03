@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const JoinScreen = () => {
   // --- State ---------------------------------------------------------------
   const [pollIdInput, setPollIdInput] = useState('');
-  const [pollIdInt, setPollIdInt] = useState<number | null>(null);
+  const [setPollIdInt] = useState<number | null>(null);
 
   // --- Funktionen ----------------------------------------------------------
 
