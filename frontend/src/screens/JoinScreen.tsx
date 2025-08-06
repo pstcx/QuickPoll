@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 
 const JoinScreen = () => {
   // --- State ---------------------------------------------------------------
-  const [pollIdInput, setPollIdInput] = useState('');
+  const [pollIdInput, setPollIdInput] = useState("");
   const [pollIdInt, setPollIdInt] = useState<number | null>(null);
 
   // --- Funktionen ----------------------------------------------------------
@@ -11,16 +11,16 @@ const JoinScreen = () => {
     const parsed = parseInt(pollIdInput, 10);
 
     if (isNaN(parsed)) {
-      console.log('Ungültige Eingabe – keine Zahl');
+      console.log("Ungültige Eingabe – keine Zahl");
       return;
     }
 
     setPollIdInt(parsed);
-    console.log('Gespeicherter Poll-Code (Integer):', parsed);
+    console.log("Gespeicherter Poll-Code (Integer):", pollIdInt);
   };
 
   const qrCodeScannenBtn = () => {
-    console.log('QR-Code-Scannen-Button geklickt');
+    console.log("QR-Code-Scannen-Button geklickt");
   };
 
   // --- Rückgabe der UI -----------------------------------------------------
@@ -41,7 +41,10 @@ const JoinScreen = () => {
           </h3>
 
           <div className="w-full max-w-full flex flex-col gap-1">
-            <label htmlFor="pollId" className="text-base text-gray-500 text-left m-0">
+            <label
+              htmlFor="pollId"
+              className="text-base text-gray-500 text-left m-0"
+            >
               Poll-ID eingeben
             </label>
 
