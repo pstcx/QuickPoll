@@ -8,6 +8,7 @@ import ResultScreen from './screens/ResultScreen'
 import CreateScreen from './screens/CreateScreen'
 import JoinScreen from './screens/JoinScreen'
 import Header from './lib/header'
+import MultipleChoiceScreen from './screens/Components/MultipleChoicePoll'
 
 function App() {
   const location = useLocation()
@@ -24,6 +25,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/create" element={<CreateScreen />} />
+        <Route path="/create/multiple-choice" element={<MultipleChoiceScreen/>} />
         <Route path="/my-polls" element={<DashboardScreen />} />
         <Route path="/my-polls/:id" element={<ManageScreen />} />
         <Route path="/my-polls/:id/result" element={<ResultScreen />} />

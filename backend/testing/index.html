@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test - Umfrage erstellen</title>
+</head>
+<body>
+    <h1>API Test - Umfrage mit Frage erstellen</h1>
+    
+    <h2>1. Umfrage erstellen</h2>
+    <form id="surveyForm">
+        <p>
+            <label>Umfrage Titel:</label><br>
+            <input type="text" id="surveyTitle" value="Test Umfrage" required>
+        </p>
+        <p>
+            <label>Beschreibung:</label><br>
+            <input type="text" id="surveyDesc" value="Das ist ein Test">
+        </p>
+        <p>
+            <label>Frage:</label><br>
+            <input type="text" id="questionTitle" value="Wie geht es dir?" required>
+        </p>
+        <p>
+            <label>Fragetyp:</label><br>
+            <select id="questionType">
+                <option value="text">Text</option>
+                <option value="single_choice">Einzelauswahl</option>
+                <option value="multiple_choice">Mehrfachauswahl</option>
+                <option value="rating">Bewertung</option>
+                <option value="yes_no">Ja/Nein</option>
+            </select>
+        </p>
+        <p>
+            <label>Optionen (falls Auswahl, mit Komma trennen):</label><br>
+            <input type="text" id="questionOptions" value="Gut,Schlecht,Geht so" placeholder="Option1,Option2,Option3">
+        </p>
+        <button type="submit">Umfrage erstellen</button>
+    </form>
+    
+    <hr>
+    
+    <h2>2. Alle Umfragen anzeigen</h2>
+    <button onclick="loadSurveys()">Umfragen laden</button>
+    <div id="surveysResult"></div>
+    
+    <hr>
+    
+    <h2>3. API Status</h2>
+    <button onclick="checkHealth()">API Status prüfen</button>
+    <div id="healthResult"></div>
+    
+    <hr>
+    
+    <h2>4. Log/Ergebnisse</h2>
+    <div id="log" style="background: #f0f0f0; padding: 10px; height: 200px; overflow-y: scroll;"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Umfrage erstellen
+        document.getElementById('surveyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('surveyTitle').value;
+            const description = document.getElementById('surveyDesc').value;
+            const questionTitle = document.getElementById('questionTitle').value;
+            const questionType = document.getElementById('questionType').value;
+            const optionsText = document.getElementById('questionOptions').value;
+            
+            // Optionen verarbeiten
+            let options = null;
+            if ((questionType === 'single_choice' || questionType === 'multiple_choice') && optionsText) {
+                options = optionsText.split(',').map(opt => opt.trim()).filter(opt => opt);
+            }
+            
+            const surveyData = {
+                title: title,
+                description: description,
+                is_active: true,
+                questions: [{
+                    title: questionTitle,
+                    type: questionType,
+                    options: options,
+                    required: true,
+                    description: null
+                }]
+            };
+            
+            log('Sende Daten an API: ' + JSON.stringify(surveyData, null, 2));
+            
+            try {
+                const response = await fetch(`${API_BASE}/surveys/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(surveyData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('✅ ERFOLG! Umfrage erstellt mit ID: ' + result.id);
+                    log('Umfrage Details: ' + JSON.stringify(result, null, 2));
+                } else {
+                    log('❌ FEHLER beim Erstellen: ' + JSON.stringify(result));
+                }
+                
+            } catch (error) {
+                log('❌ VERBINDUNGSFEHLER: ' + error.message);
+            }
+        });
+
+        // Alle Umfragen laden
+        async function loadSurveys() {
+            log('Lade alle Umfragen...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/surveys/`);
+                const surveys = await response.json();
+                
+                const resultDiv = document.getElementById('surveysResult');
+                
+                if (surveys.length === 0) {
+                    resultDiv.innerHTML = '<p>Keine Umfragen vorhanden</p>';
+                    log('ℹ️ Keine Umfragen in der Datenbank');
+                } else {
+                    let html = '<h3>Gefundene Umfragen:</h3>';
+                    surveys.forEach(survey => {
+                        html += `
+                            <div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px;">
+                                <h4>${survey.title}</h4>
+                                <p><strong>ID:</strong> ${survey.id}</p>
+                                <p><strong>Beschreibung:</strong> ${survey.description || 'Keine'}</p>
+                                <p><strong>Erstellt:</strong> ${survey.created_at}</p>
+                                <p><strong>Fragen:</strong> ${survey.questions.length}</p>
+                                <p><strong>Antworten:</strong> ${survey.response_count}</p>
+                                <details>
+                                    <summary>Fragen anzeigen</summary>
+                                    <pre>${JSON.stringify(survey.questions, null, 2)}</pre>
+                                </details>
+                            </div>
+                        `;
+                    });
+                    resultDiv.innerHTML = html;
+                    log(`✅ ${surveys.length} Umfragen geladen`);
+                }
+                
+            } catch (error) {
+                document.getElementById('surveysResult').innerHTML = '<p style="color: red;">Fehler beim Laden</p>';
+                log('❌ FEHLER beim Laden: ' + error.message);
+            }
+        }
+
+        // API Health Check
+        async function checkHealth() {
+            log('Prüfe API Status...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health/`);
+                const health = await response.json();
+                
+                const resultDiv = document.getElementById('healthResult');
+                resultDiv.innerHTML = `
+                    <p style="color: green;"><strong>API Status:</strong> ${health.status}</p>
+                    <p><strong>Datenbank:</strong> ${health.database}</p>
+                    <p><strong>Umfragen in DB:</strong> ${health.surveys_count}</p>
+                    <p><strong>Antworten in DB:</strong> ${health.responses_count}</p>
+                    <p><strong>Zeitstempel:</strong> ${health.timestamp}</p>
+                `;
+                
+                log('✅ API ist online - ' + health.surveys_count + ' Umfragen in Datenbank');
+                
+            } catch (error) {
+                document.getElementById('healthResult').innerHTML = '<p style="color: red;">API nicht erreichbar</p>';
+                log('❌ API nicht erreichbar: ' + error.message);
+            }
+        }
+
+        // Beim Laden der Seite API-Status prüfen
+        window.onload = function() {
+            log('Seite geladen - Teste Verbindung zur API...');
+            checkHealth();
+        };
+    </script>
+</body>
+</html>
