@@ -136,7 +136,7 @@ app = FastAPI(
 # CORS Middleware für Frontend-Integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In Produktion: spezifische URLs angeben
+    allow_origins=["https://quickpoll.vercel.app"],  # In Produktion: spezifische URLs angeben
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
