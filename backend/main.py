@@ -556,6 +556,8 @@ async def root():
         "version": "1.0.0"
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) #Hier wird später der Port angepasst
+### not needed for vercel deployment
+#
+#if __name__ == "__main__":
+#    import uvicorn
+#    uvicorn.run(app, host="0.0.0.0", port=8000) #Hier wird später der Port angepasst
