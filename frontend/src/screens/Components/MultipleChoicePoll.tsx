@@ -37,20 +37,21 @@ const MultipleChoiceScreen = () => {
           onChange={(e) => handleChangeOption(index, e.target.value)}
         />
       ))}
+      <div className="flex gap-6 justify-center">
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+          onClick={handleAddOption}
+        >
+          Weitere Option
+        </button>
 
-      <button
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-        onClick={handleAddOption}
-      >
-        Weitere Option
-      </button>
-
-      <button
-        className="bg-green-500 text-white px-4 py-2 rounded"
-        onClick={handleSubmit}
-      >
-        Umfrage erstellen
-      </button>
+        <button
+          className="bg-green-500 text-white px-4 py-2 rounded mb-4"
+          onClick={handleSubmit}
+        >
+          Umfrage erstellen
+        </button>
+      </div>
     </div>
   );
 };
