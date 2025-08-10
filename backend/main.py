@@ -136,7 +136,7 @@ app = FastAPI(
 # CORS Middleware für Frontend-Integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In Produktion: spezifische URLs angeben
+    allow_origins=["https://quickpoll.vercel.app"],  # In Produktion: spezifische URLs angeben
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -556,6 +556,8 @@ async def root():
         "version": "1.0.0"
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) #Hier wird später der Port angepasst
+### not needed for vercel deployment
+#
+#if __name__ == "__main__":
+#    import uvicorn
+#    uvicorn.run(app, host="0.0.0.0", port=8000) #Hier wird später der Port angepasst
