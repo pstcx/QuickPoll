@@ -8,7 +8,7 @@ export interface Survey {
   id: string;
   title: string;
   description?: string;
-  is_active: boolean;
+  status: 'ready' | 'active' | 'finished';
   created_at: string;
   expires_at: string;
   questions: Question[];
@@ -166,5 +166,14 @@ export async function submitSurveyResponse(surveyId: string, responseData: Respo
   return apiRequest(`/surveys/${surveyId}/responses`, {
     method: 'POST',
     body: JSON.stringify(responseData),
+  });
+}
+
+/**
+ * Status einer Umfrage ändern
+ */
+export async function updateSurveyStatus(surveyId: string, status: 'ready' | 'active' | 'finished'): Promise<Survey> {
+  return apiRequest(`/surveys/${surveyId}/status?status=${status}`, {
+    method: 'PUT',
   });
 }

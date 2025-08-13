@@ -8,6 +8,12 @@ import uuid
 import json
 import random
 
+# Status Enum für Umfragen
+class SurveyStatus(str, Enum):
+    READY = "ready"  # Bereit zum Start
+    ACTIVE = "active"  # Aktiv / Live
+    FINISHED = "finished"  # Umfrage beendet
+
 # SQLAlchemy Imports
 from sqlalchemy import create_engine, String, DateTime, Boolean, Integer, Text, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
@@ -27,7 +33,7 @@ class SurveyDB(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String, default=SurveyStatus.READY.value)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     response_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -87,7 +93,7 @@ class Question(QuestionBase):
 class SurveyBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
-    is_active: bool = True
+    status: SurveyStatus = SurveyStatus.READY
 
 class SurveyCreate(SurveyBase):
     questions: List[QuestionCreate] = []
@@ -140,11 +146,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://quickpoll.vercel.app",  # Produktion
-        "http://localhost:3000",        # Lokales Frontend
-        "http://localhost:5173",        # Vite dev server
-        "http://127.0.0.1:3000",       # Alternative localhost
-        "http://127.0.0.1:5173",       # Alternative localhost
+        "https://quick-poll-eta.vercel.app/",  # Produktion
+        "http://localhost:5173",        # Vite dev server / nicht auf Prod aktivieren
         "null"                          # Für file:// URLs (lokale HTML-Dateien)
     ],
     allow_credentials=True,
@@ -212,7 +215,7 @@ def get_survey_with_questions(db: Session, survey_id: str) -> Survey:
         id=survey_db.id,
         title=survey_db.title,
         description=survey_db.description,
-        is_active=survey_db.is_active,
+        status=SurveyStatus(survey_db.status),
         created_at=survey_db.created_at,
         expires_at=survey_db.expires_at,
         response_count=survey_db.response_count,
@@ -238,12 +241,12 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
     now = datetime.now()
     expires_at = now + timedelta(days=7)
     
-    # Umfrage in Datenbank speichern
+    # Umfrage in Datenbank speichern (standardmäßig "ready")
     survey_db = SurveyDB(
         id=survey_id,
         title=survey_data.title,
         description=survey_data.description,
-        is_active=survey_data.is_active,
+        status=SurveyStatus.READY.value,  # Standardmäßig "ready"
         created_at=now,
         expires_at=expires_at,
         response_count=0
@@ -286,7 +289,7 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
         id=survey_id,
         title=survey_data.title,
         description=survey_data.description,
-        is_active=survey_data.is_active,
+        status=SurveyStatus.READY,
         created_at=now,
         expires_at=expires_at,
         response_count=0,
@@ -322,7 +325,19 @@ async def update_survey(survey_id: str, survey_data: SurveyBase, db: Session = D
     
     survey_db.title = survey_data.title
     survey_db.description = survey_data.description
-    survey_db.is_active = survey_data.is_active
+    survey_db.status = survey_data.status.value
+    
+    db.commit()
+    return get_survey_with_questions(db, survey_id)
+
+@app.put("/surveys/{survey_id}/status", response_model=Survey, tags=["Surveys"])
+async def update_survey_status(survey_id: str, status: SurveyStatus, db: Session = Depends(get_db)):
+    """Status einer Umfrage ändern"""
+    survey_db = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
+    if not survey_db:
+        raise HTTPException(status_code=404, detail="Umfrage nicht gefunden")
+    
+    survey_db.status = status.value
     
     db.commit()
     return get_survey_with_questions(db, survey_id)

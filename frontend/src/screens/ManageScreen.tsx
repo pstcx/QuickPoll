@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Copy,
   Info,
@@ -9,19 +9,68 @@ import {
   Play,
   TrendingUp,
   AlertCircle,
+  X,
 } from "lucide-react";
 import QRCode from "react-qr-code";
-
-interface SurveyDetails {
-  title: string;
-  directLink: string;
-  pollId: string;
-}
+import { getSurvey, updateSurveyStatus, type Survey } from "../lib/api";
 
 const ManageScreen: React.FC = () => {
   const { id: pollId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [survey, setSurvey] = useState<Survey | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
-  if (!pollId || pollId.length !== 4) {
+  useEffect(() => {
+    if (!pollId || pollId.length !== 4) {
+      setError("Ungültige Poll-ID. Die ID muss genau 4 Zeichen lang sein.");
+      setIsLoading(false);
+      return;
+    }
+
+    loadSurvey();
+  }, [pollId]);
+
+  // ESC key to close modal
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showQRModal) {
+        setShowQRModal(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [showQRModal]);
+
+  const loadSurvey = async () => {
+    if (!pollId) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const surveyData = await getSurvey(pollId);
+      setSurvey(surveyData);
+      
+      // If survey is already active or finished, redirect to result page
+      if (surveyData.status === 'active' || surveyData.status === 'finished') {
+        navigate(`/my-polls/${pollId}/result`);
+        return;
+      }
+      
+    } catch (error) {
+      console.error('Error loading survey:', error);
+      setError("Poll nicht gefunden oder nicht verfügbar.");
+      setSurvey(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!pollId || pollId.length !== 4 || error) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -53,23 +102,26 @@ const ManageScreen: React.FC = () => {
     );
   }
 
-  // If poll already started, redirect to DashboardScreen
-  if (1 == 1 + 2) {
-    window.location.href = "/my-polls";
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Lade Umfrage...</p>
+        </div>
+      </div>
+    );
   }
 
-  const [surveyDetails] = useState<SurveyDetails>({
-    title: "Test Umfrage",
+  // Survey details for display
+  const surveyDetails = {
+    title: survey?.title || "Umfrage verwalten",
     directLink: `https://quick-poll-eta.vercel.app/poll/${pollId}`,
     pollId: pollId || "-",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isStarted] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
-  // Beispiel-Teilnehmer
-  const participants = [
-    //{ id: 1, name: 'Testteilnehmer' }
-  ];
+  };
+  
+  const participants: never[] = [];
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(surveyDetails.directLink);
@@ -77,17 +129,60 @@ const ManageScreen: React.FC = () => {
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  const handleStartSurvey = () => {
-    if (!isLoading) {
+  const handleStartSurvey = async () => {
+    if (!survey || isLoading) return;
+    
+    try {
       setIsLoading(true);
-      setTimeout(() => {
-        window.location.href = "/my-polls/" + surveyDetails.pollId + "/result";
-      }, 1000);
+      await updateSurveyStatus(survey.id, 'active');
+      // Redirect to result page after starting
+      navigate(`/my-polls/${survey.id}/result`);
+    } catch (error) {
+      console.error('Error starting survey:', error);
+      setIsLoading(false);
     }
+  };
+
+  const handleQRClick = () => {
+    setShowQRModal(true);
+  };
+
+  const closeQRModal = () => {
+    setShowQRModal(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeQRModal}
+        >
+          <div 
+            className="bg-white rounded-xl p-8 max-w-lg w-full mx-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeQRModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Modal schließen"
+            >
+              <X size={24} />
+            </button>
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">QR-Code</h3>
+              <div className="bg-white p-6 rounded-lg border-2 border-gray-200 inline-block">
+                <QRCode value={surveyDetails.directLink} size={350} />
+              </div>
+              <p className="text-gray-600 mt-4 text-sm">
+                Scanne den QR-Code mit deinem Smartphone, um direkt zur Umfrage zu gelangen.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-6 py-5 scale-90 origin-top">
@@ -102,7 +197,7 @@ const ManageScreen: React.FC = () => {
                   ID: {surveyDetails.pollId}
                 </span>
                 <p className="text-gray-600 flex items-center gap-2">
-                  {isStarted ? (
+                  {survey?.status === 'active' ? (
                     <>
                       Live
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
@@ -151,8 +246,16 @@ const ManageScreen: React.FC = () => {
 
               {/* QR Code Area */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-7 mb-5 text-center border-2 border-dashed border-gray-200">
-                <div className="w-56 h-56 mx-auto bg-white rounded-xl shadow-sm flex items-center justify-center border border-gray-200">
+                <div 
+                  className="w-56 h-56 mx-auto bg-white rounded-xl shadow-sm flex items-center justify-center border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 relative group"
+                  onClick={handleQRClick}
+                  title="Klicke für Großansicht"
+                >
                   <QRCode value={surveyDetails.directLink} />
+                  {/* Tooltip */}
+                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    Klicke für Großansicht
+                  </div>
                 </div>
               </div>
 
