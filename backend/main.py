@@ -2,10 +2,11 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 import uuid
 import json
+import random
 
 # SQLAlchemy Imports
 from sqlalchemy import create_engine, String, DateTime, Boolean, Integer, Text, JSON
@@ -28,6 +29,7 @@ class SurveyDB(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     response_count: Mapped[int] = mapped_column(Integer, default=0)
 
 class QuestionDB(Base):
@@ -93,6 +95,7 @@ class SurveyCreate(SurveyBase):
 class Survey(SurveyBase):
     id: str
     created_at: datetime
+    expires_at: datetime
     questions: List[Question] = []
     response_count: int = 0
 
@@ -136,15 +139,51 @@ app = FastAPI(
 # CORS Middleware für Frontend-Integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://quickpoll.vercel.app"],  # In Produktion: spezifische URLs angeben
+    allow_origins=[
+        "https://quickpoll.vercel.app",  # Produktion
+        "http://localhost:3000",        # Lokales Frontend
+        "http://localhost:5173",        # Vite dev server
+        "http://127.0.0.1:3000",       # Alternative localhost
+        "http://127.0.0.1:5173",       # Alternative localhost
+        "null"                          # Für file:// URLs (lokale HTML-Dateien)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Helper Functions
+def generate_survey_id(db: Session) -> str:
+    """Generiert eine eindeutige 4-stellige Umfrage-ID"""
+    while True:
+        # Generiere eine 4-stellige Zahl
+        survey_id = str(random.randint(1000, 9999))
+        
+        # Prüfe ob die ID bereits existiert
+        existing = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
+        if not existing:
+            return survey_id
+
 def generate_id() -> str:
+    """Generiert eine UUID für andere Entitäten (Questions, Responses)"""
     return str(uuid.uuid4())
+
+def cleanup_expired_surveys(db: Session):
+    """Löscht abgelaufene Umfragen automatisch"""
+    now = datetime.now()
+    expired_surveys = db.query(SurveyDB).filter(SurveyDB.expires_at <= now).all()
+    
+    for survey in expired_surveys:
+        # Lösche zuerst alle Fragen der Umfrage
+        db.query(QuestionDB).filter(QuestionDB.survey_id == survey.id).delete()
+        # Lösche alle Antworten der Umfrage
+        db.query(ResponseDB).filter(ResponseDB.survey_id == survey.id).delete()
+        # Lösche die Umfrage selbst
+        db.delete(survey)
+    
+    if expired_surveys:
+        db.commit()
+        print(f"Gelöscht: {len(expired_surveys)} abgelaufene Umfragen")
 
 def get_survey_with_questions(db: Session, survey_id: str) -> Survey:
     """Umfrage mit allen Fragen aus der Datenbank laden"""
@@ -175,6 +214,7 @@ def get_survey_with_questions(db: Session, survey_id: str) -> Survey:
         description=survey_db.description,
         is_active=survey_db.is_active,
         created_at=survey_db.created_at,
+        expires_at=survey_db.expires_at,
         response_count=survey_db.response_count,
         questions=questions
     )
@@ -188,8 +228,15 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
     - **title**: Titel der Umfrage (erforderlich)
     - **description**: Beschreibung der Umfrage (optional)
     - **questions**: Liste der Fragen (optional, können später hinzugefügt werden)
+    
+    Umfragen haben eine 4-stellige ID und laufen nach 7 Tagen ab.
     """
-    survey_id = generate_id()
+    # Bereinige abgelaufene Umfragen vor der Erstellung einer neuen
+    cleanup_expired_surveys(db)
+    
+    survey_id = generate_survey_id(db)
+    now = datetime.now()
+    expires_at = now + timedelta(days=7)
     
     # Umfrage in Datenbank speichern
     survey_db = SurveyDB(
@@ -197,7 +244,8 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
         title=survey_data.title,
         description=survey_data.description,
         is_active=survey_data.is_active,
-        created_at=datetime.now(),
+        created_at=now,
+        expires_at=expires_at,
         response_count=0
     )
     db.add(survey_db)
@@ -239,14 +287,18 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
         title=survey_data.title,
         description=survey_data.description,
         is_active=survey_data.is_active,
-        created_at=datetime.now(),
+        created_at=now,
+        expires_at=expires_at,
         response_count=0,
         questions=questions
     )
 
 @app.get("/surveys/", response_model=List[Survey], tags=["Surveys"])
 async def get_all_surveys(db: Session = Depends(get_db)):
-    """Alle Umfragen aus der Datenbank abrufen"""
+    """Alle Umfragen aus der Datenbank abrufen (bereinigt automatisch abgelaufene)"""
+    # Bereinige abgelaufene Umfragen vor der Abfrage
+    cleanup_expired_surveys(db)
+    
     surveys_db = db.query(SurveyDB).all()
     surveys = []
     
