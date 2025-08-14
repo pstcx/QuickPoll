@@ -6,9 +6,14 @@ import {
   AlertCircle,
   Star,
   Download,
+  Users,
+  Clock,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSurvey, getSurveyResponses, updateSurveyStatus, exportSurveyToExcel, type Survey, type Question, type Response } from "../lib/api";
+import { useWebSocketStable as useWebSocket, type WebSocketMessage } from "../hooks/useWebSocketStable";
 
 // Process response data for different question types
 interface ProcessedQuestion {
@@ -30,6 +35,30 @@ const ResultScreen: React.FC = () => {
   const [isEndingPoll, setIsEndingPoll] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [activeParticipants, setActiveParticipants] = useState(0);
+  const [waitingParticipants, setWaitingParticipants] = useState(0);
+
+  // WebSocket für Live-Updates
+  const { isConnected, sendMessage } = useWebSocket({
+    surveyId: pollId && pollId !== 'undefined' ? pollId : null,
+    role: 'host',
+    onMessage: (message: WebSocketMessage) => {
+      switch (message.type) {
+        case 'response_submitted':
+          // Neue Antwort erhalten - Daten neu laden
+          loadResponsesData();
+          break;
+        case 'participant_joined':
+        case 'participant_left':
+          setWaitingParticipants(message.waiting_count || 0);
+          break;
+        case 'initial_stats':
+          setWaitingParticipants(message.waiting_count || 0);
+          break;
+      }
+    },
+    enabled: true
+  });
 
   useEffect(() => {
     if (!pollId || pollId.length !== 4) {
@@ -40,6 +69,28 @@ const ResultScreen: React.FC = () => {
 
     loadSurveyData();
   }, [pollId]);
+
+  // Auto-update processed questions when responses or survey data changes for live chart updates
+  useEffect(() => {
+    if (survey && responses) {
+      const processed = processQuestionData(survey.questions, responses);
+      setProcessedQuestions(processed);
+    }
+  }, [survey, responses]);
+
+  const loadResponsesData = async () => {
+    if (!pollId) {
+      return;
+    }
+    
+    try {
+      const responseData = await getSurveyResponses(pollId);
+      setResponses(responseData);
+      // processedQuestions will be automatically updated via useEffect
+    } catch (error) {
+      console.error("Fehler beim Laden der Antworten:", error);
+    }
+  };
 
   const loadSurveyData = async () => {
     if (!pollId) return;
@@ -78,11 +129,6 @@ const ResultScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Count number of submitted responses (1 per person who submitted)
-  const getSubmittedResponsesCount = () => {
-    return responses.length;
   };
 
   // Process responses for each question type
@@ -246,6 +292,14 @@ const ResultScreen: React.FC = () => {
     
     try {
       setIsEndingPoll(true);
+      
+      // WebSocket-Nachricht senden (wird zu allen Teilnehmern weitergeleitet)
+      sendMessage({
+        type: 'end_survey',
+        survey_id: survey.id
+      });
+      
+      // Fallback: Auch über API Status ändern
       await updateSurveyStatus(survey.id, 'finished');
       await loadSurveyData(); // Reload to get updated status
     } catch (error) {
@@ -514,13 +568,25 @@ const ResultScreen: React.FC = () => {
                   {survey?.status === 'finished' ? (
                     <>
                       <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                      Umfrage beendet • {responses.length} Teilnehmer aktiv • {getSubmittedResponsesCount()} abgegeben
+                      Umfrage beendet • {responses.length} Antworten
                     </>
                   ) : (
                     <>
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      Live • {responses.length} Teilnehmer aktiv • {getSubmittedResponsesCount()} abgegeben
+                      Live • {waitingParticipants} Teilnehmer aktiv • {responses.length} Antworten
                     </>
+                  )}
+                  {/* WebSocket Status - nur bei aktiven Umfragen anzeigen */}
+                  {survey?.status !== 'finished' && (
+                    isConnected ? (
+                      <span title="Live-Verbindung aktiv">
+                        <Wifi className="w-4 h-4 text-green-500" />
+                      </span>
+                    ) : (
+                      <span title="Verbindung unterbrochen">
+                        <WifiOff className="w-4 h-4 text-red-500" />
+                      </span>
+                    )
                   )}
                 </p>
               </div>

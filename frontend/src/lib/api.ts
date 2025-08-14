@@ -5,7 +5,7 @@ import { getSessionId } from './session';
 //const BASE_URL = 'https://quick-poll-a49h.vercel.app';
 const BASE_URL = 'http://localhost:8000';
 
-// API-Typen (synchron mit Backend)
+// Type Definitions
 export interface Survey {
   id: string;
   title: string;
@@ -13,8 +13,8 @@ export interface Survey {
   status: 'ready' | 'active' | 'finished';
   created_at: string;
   expires_at: string;
-  questions: Question[];
   response_count: number;
+  questions: Question[];
 }
 
 export interface Question {
@@ -26,25 +26,8 @@ export interface Question {
   required: boolean;
   description?: string;
   order: number;
-  created_at: string;
 }
 
-export interface CreateSurveyData {
-  title: string;
-  description?: string;
-  is_active: boolean;
-  questions: CreateQuestionData[];
-}
-
-export interface CreateQuestionData {
-  title: string;
-  type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'yes_no';
-  options?: string[];
-  required: boolean;
-  description?: string;
-}
-
-// Fehlende Response-Typen hinzugefügt
 export interface AnswerSubmission {
   question_id: string;
   answer: string | string[] | number | boolean;
@@ -99,83 +82,81 @@ async function apiRequest<T>(
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} - ${response.statusText}`);
     }
-
-    return await response.json();
+    
+    return response.json() as T;
   } catch (error) {
-    console.error('API Request failed:', error);
+    console.error(`API Request failed for ${url}:`, error);
     throw error;
   }
 }
 
-// API-Methoden
-
-/**
- * Alle Umfragen abrufen
- */
-export async function getSurveys(): Promise<Survey[]> {
-  return apiRequest<Survey[]>('/surveys/');
+// Health Check
+export async function checkHealth(): Promise<HealthResponse> {
+  return apiRequest<HealthResponse>('/health');
 }
 
-/**
- * Eine spezifische Umfrage abrufen (für Manager/Besitzer)
- */
-export async function getSurvey(id: string): Promise<Survey> {
-  return apiRequest<Survey>(`/surveys/${id}`);
-}
-
-/**
- * Eine spezifische Umfrage öffentlich abrufen (für Teilnehmer)
- */
-export async function getPublicSurvey(id: string): Promise<Survey> {
-  return apiRequest<Survey>(`/public/surveys/${id}`);
-}
-
-/**
- * Neue Umfrage erstellen
- */
-export async function createSurvey(surveyData: CreateSurveyData): Promise<Survey> {
+// Survey CRUD Operations
+export async function createSurvey(surveyData: Omit<Survey, 'id' | 'created_at' | 'expires_at' | 'response_count'>): Promise<Survey> {
   return apiRequest<Survey>('/surveys/', {
     method: 'POST',
     body: JSON.stringify(surveyData),
   });
 }
 
-/**
- * Umfrage aktualisieren
- */
-export async function updateSurvey(id: string, surveyData: Partial<CreateSurveyData>): Promise<Survey> {
-  return apiRequest<Survey>(`/surveys/${id}`, {
+export async function getSurvey(surveyId: string): Promise<Survey> {
+  return apiRequest<Survey>(`/surveys/${surveyId}`);
+}
+
+export async function getPublicSurvey(surveyId: string): Promise<Survey> {
+  return apiRequest<Survey>(`/public/surveys/${surveyId}`);
+}
+
+export async function getAllSurveys(): Promise<Survey[]> {
+  return apiRequest<Survey[]>('/surveys/');
+}
+
+// Alias für Rückwärtskompatibilität
+export const getSurveys = getAllSurveys;
+
+export async function updateSurvey(surveyId: string, surveyData: Partial<Survey>): Promise<Survey> {
+  return apiRequest<Survey>(`/surveys/${surveyId}`, {
     method: 'PUT',
     body: JSON.stringify(surveyData),
   });
 }
 
-/**
- * Umfrage löschen
- */
-export async function deleteSurvey(id: string): Promise<void> {
-  return apiRequest<void>(`/surveys/${id}`, {
+export async function deleteSurvey(surveyId: string): Promise<void> {
+  return apiRequest<void>(`/surveys/${surveyId}`, {
     method: 'DELETE',
   });
 }
 
-/**
- * API-Gesundheitsstatus prüfen
- */
-export async function getHealthStatus(): Promise<HealthResponse> {
-  return apiRequest('/health/');
+// Question Operations
+export async function addQuestion(surveyId: string, questionData: Omit<Question, 'id' | 'survey_id'>): Promise<Question> {
+  return apiRequest<Question>(`/surveys/${surveyId}/questions/`, {
+    method: 'POST',
+    body: JSON.stringify(questionData),
+  });
 }
 
-/**
- * Antworten für eine Umfrage abrufen
- */
+export async function updateQuestion(questionId: string, questionData: Partial<Question>): Promise<Question> {
+  return apiRequest<Question>(`/questions/${questionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(questionData),
+  });
+}
+
+export async function deleteQuestion(questionId: string): Promise<void> {
+  return apiRequest<void>(`/questions/${questionId}`, {
+    method: 'DELETE',
+  });
+}
+
+// Response Operations
 export async function getSurveyResponses(surveyId: string): Promise<Response[]> {
-  return apiRequest<Response[]>(`/surveys/${surveyId}/responses`);
+  return apiRequest<Response[]>(`/surveys/${surveyId}/responses/`);
 }
 
-/**
- * Neue Antwort für eine Umfrage erstellen
- */
 export async function submitSurveyResponse(responseData: ResponseSubmission): Promise<Response> {
   return apiRequest(`/responses/`, {
     method: 'POST',

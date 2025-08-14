@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request, Response
+from fastapi import FastAPI, HTTPException, Depends, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -10,6 +10,7 @@ import json
 import random
 import os
 import tempfile
+import asyncio
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
@@ -19,6 +20,145 @@ class SurveyStatus(str, Enum):
     READY = "ready"  # Bereit zum Start
     ACTIVE = "active"  # Aktiv / Live
     FINISHED = "finished"  # Umfrage beendet
+
+# WebSocket Connection Manager
+class WebSocketManager:
+    def __init__(self):
+        # survey_id -> {"hosts": [WebSocket], "participants": [WebSocket]}
+        self.connections: Dict[str, Dict[str, List[WebSocket]]] = {}
+        # websocket -> {"survey_id": str, "role": str, "session_id": str}
+        self.connection_info: Dict[WebSocket, Dict[str, str]] = {}
+        
+    async def connect(self, websocket: WebSocket, survey_id: str, role: str, session_id: str):
+        """WebSocket-Verbindung hinzufügen"""        
+        if survey_id not in self.connections:
+            self.connections[survey_id] = {"hosts": [], "participants": []}
+            
+        self.connections[survey_id][f"{role}s"].append(websocket)
+        self.connection_info[websocket] = {
+            "survey_id": survey_id,
+            "role": role,
+            "session_id": session_id
+        }
+        
+        print(f"WebSocket connected: {role} for survey {survey_id}")
+        
+        # Initial Stats senden (ohne sofortiges Participant-Tracking)
+        if role == "host":
+            try:
+                waiting_count = get_waiting_participants_count(survey_id)
+                await websocket.send_text(json.dumps({
+                    "type": "initial_stats",
+                    "survey_id": survey_id,
+                    "waiting_count": waiting_count
+                }))
+            except Exception as e:
+                print(f"Error sending initial stats: {e}")
+        
+        # Bei Participant-Verbindung Tracking später in der WebSocket-Schleife
+    
+    async def disconnect(self, websocket: WebSocket):
+        """WebSocket-Verbindung entfernen"""
+        if websocket not in self.connection_info:
+            return
+            
+        info = self.connection_info[websocket]
+        survey_id = info["survey_id"]
+        role = info["role"]
+        session_id = info["session_id"]
+        
+        # Verbindung entfernen
+        if survey_id in self.connections:
+            role_list = self.connections[survey_id][f"{role}s"]
+            if websocket in role_list:
+                role_list.remove(websocket)
+                
+        del self.connection_info[websocket]
+        
+        # Bei Participant-Trennung aus Warteraum entfernen
+        if role == "participant":
+            track_participant_leave(survey_id, session_id)
+            await self.broadcast_to_hosts(survey_id, {
+                "type": "participant_left",
+                "survey_id": survey_id,
+                "session_id": session_id,
+                "waiting_count": get_waiting_participants_count(survey_id)
+            })
+        
+        print(f"WebSocket disconnected: {role} from survey {survey_id}")
+    
+    async def broadcast_to_hosts(self, survey_id: str, message: dict):
+        """Nachricht an alle Hosts einer Umfrage senden"""
+        if survey_id not in self.connections:
+            return
+            
+        hosts = self.connections[survey_id]["hosts"].copy()
+        
+        dead_connections = []
+        
+        for host_ws in hosts:
+            try:
+                await host_ws.send_text(json.dumps(message))
+            except:
+                dead_connections.append(host_ws)
+        
+        # Tote Verbindungen entfernen
+        for dead_ws in dead_connections:
+            await self.disconnect(dead_ws)
+    
+    async def broadcast_to_participants(self, survey_id: str, message: dict):
+        """Nachricht an alle Teilnehmer einer Umfrage senden"""
+        if survey_id not in self.connections:
+            return
+            
+        participants = self.connections[survey_id]["participants"].copy()
+        dead_connections = []
+        
+        for participant_ws in participants:
+            try:
+                await participant_ws.send_text(json.dumps(message))
+            except:
+                dead_connections.append(participant_ws)
+        
+        # Tote Verbindungen entfernen
+        for dead_ws in dead_connections:
+            await self.disconnect(dead_ws)
+    
+    async def broadcast_to_all(self, survey_id: str, message: dict):
+        """Nachricht an alle Verbindungen einer Umfrage senden"""
+        await self.broadcast_to_hosts(survey_id, message)
+        await self.broadcast_to_participants(survey_id, message)
+
+# Globaler WebSocket Manager
+ws_manager = WebSocketManager()
+
+# In-Memory Teilnehmer-Tracking
+participant_tracker = {}  # survey_id -> set of session_ids
+
+def track_participant_join(survey_id: str, session_id: str):
+    """Teilnehmer als 'wartend' markieren"""
+    if survey_id not in participant_tracker:
+        participant_tracker[survey_id] = set()
+    participant_tracker[survey_id].add(session_id)
+    print(f"Participant {session_id} joined survey {survey_id}. Total waiting: {len(participant_tracker[survey_id])}")
+
+def track_participant_leave(survey_id: str, session_id: str):
+    """Teilnehmer entfernen"""
+    if survey_id in participant_tracker and session_id in participant_tracker[survey_id]:
+        participant_tracker[survey_id].remove(session_id)
+        if not participant_tracker[survey_id]:
+            del participant_tracker[survey_id]
+        print(f"Participant {session_id} left survey {survey_id}")
+
+def get_waiting_participants_count(survey_id: str) -> int:
+    """Anzahl wartender Teilnehmer abrufen"""
+    return len(participant_tracker.get(survey_id, set()))
+
+def clear_waiting_participants(survey_id: str):
+    """Alle wartenden Teilnehmer einer Umfrage entfernen"""
+    if survey_id in participant_tracker:
+        del participant_tracker[survey_id]
+        print(f"Cleared all waiting participants for survey {survey_id}")
 
 # SQLAlchemy Imports
 from sqlalchemy import create_engine, String, DateTime, Boolean, Integer, Text, JSON, text
@@ -561,6 +701,15 @@ async def submit_response(response_data: ResponseSubmission, db: Session = Depen
     
     db.commit()
     
+    # Live-Update an Hosts senden
+    await ws_manager.broadcast_to_hosts(response_data.survey_id, {
+        "type": "response_submitted",
+        "survey_id": response_data.survey_id,
+        "response_count": survey_db.response_count,
+        "participant_name": response_data.participant_name,
+        "submitted_at": datetime.now().isoformat()
+    })
+    
     return Response(
         id=response_id,
         survey_id=response_data.survey_id,
@@ -570,16 +719,8 @@ async def submit_response(response_data: ResponseSubmission, db: Session = Depen
     )
 
 @app.get("/surveys/{survey_id}/responses/", response_model=List[Response], tags=["Responses"])
-async def get_survey_responses(survey_id: str, request: Request, db: Session = Depends(get_db)):
-    """Alle Antworten zu einer Umfrage aus der Datenbank abrufen (nur für Survey-Besitzer)"""
-    # Session-ID extrahieren und Ownership prüfen
-    session_id = get_session_id_from_header(request)
-    if not check_survey_ownership(db, survey_id, session_id):
-        raise HTTPException(
-            status_code=403, 
-            detail="Access denied. You can only view responses of your own surveys."
-        )
-    
+async def get_survey_responses(survey_id: str, db: Session = Depends(get_db)):
+    """Alle Antworten zu einer Umfrage aus der Datenbank abrufen"""
     responses_db = db.query(ResponseDB).filter(ResponseDB.survey_id == survey_id).all()
     
     responses = []
@@ -941,6 +1082,159 @@ def migrate_existing_surveys():
 
 # Migration beim Start ausführen
 migrate_existing_surveys()
+
+# WebSocket Endpunkte
+@app.websocket("/ws/host/{survey_id}")
+async def websocket_host_endpoint(websocket: WebSocket, survey_id: str):
+    """WebSocket für Survey-Hosts (ManageScreen/ResultScreen)"""
+    session_id = websocket.query_params.get("session_id", "")
+    
+    await websocket.accept()
+    await ws_manager.connect(websocket, survey_id, "host", session_id)
+    
+    try:
+        # Sende initial Stats
+        try:
+            waiting_count = get_waiting_participants_count(survey_id)
+            await websocket.send_text(json.dumps({
+                "type": "initial_stats",
+                "survey_id": survey_id,
+                "waiting_count": waiting_count
+            }))
+        except Exception as e:
+            print(f"Error sending initial stats: {e}")
+        
+        # Keep connection alive
+        while True:
+            try:
+                # Timeout für receive, damit Connection nicht blockiert
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                message = json.loads(data)
+                
+                # Host-Commands verarbeiten
+                if message.get("type") == "start_survey":
+                    await handle_start_survey(survey_id, websocket)
+                elif message.get("type") == "end_survey":
+                    await handle_end_survey(survey_id, websocket)
+                elif message.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+                    
+            except asyncio.TimeoutError:
+                # Sende Heartbeat
+                try:
+                    await websocket.send_text(json.dumps({"type": "heartbeat"}))
+                except:
+                    break
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                print(f"WebSocket host error: {e}")
+                break
+                
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await ws_manager.disconnect(websocket)
+
+@app.websocket("/ws/participant/{survey_id}")
+async def websocket_participant_endpoint(websocket: WebSocket, survey_id: str):
+    """WebSocket für Survey-Teilnehmer (PollScreen)"""
+    session_id = websocket.query_params.get("session_id", "")
+    
+    await websocket.accept()
+    await ws_manager.connect(websocket, survey_id, "participant", session_id)
+    
+    try:
+        # Participant als wartend markieren
+        track_participant_join(survey_id, session_id)
+        await ws_manager.broadcast_to_hosts(survey_id, {
+            "type": "participant_joined",
+            "survey_id": survey_id,
+            "session_id": session_id,
+            "waiting_count": get_waiting_participants_count(survey_id)
+        })
+        
+        # Keep connection alive
+        while True:
+            try:
+                # Timeout für receive, damit Connection nicht blockiert
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                message = json.loads(data)
+                
+                if message.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+                    
+            except asyncio.TimeoutError:
+                # Sende Heartbeat
+                try:
+                    await websocket.send_text(json.dumps({"type": "heartbeat"}))
+                except:
+                    break
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                print(f"WebSocket participant error: {e}")
+                break
+                
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await ws_manager.disconnect(websocket)
+
+# WebSocket Command Handlers
+async def handle_start_survey(survey_id: str, host_websocket: WebSocket):
+    """Survey starten - allen Teilnehmern Bescheid geben"""
+    try:
+        # Status in Datenbank ändern
+        db = SessionLocal()
+        survey_db = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
+        if survey_db:
+            survey_db.status = SurveyStatus.ACTIVE.value
+            db.commit()
+            
+            # Allen Teilnehmern Bescheid geben
+            await ws_manager.broadcast_to_participants(survey_id, {
+                "type": "survey_started",
+                "survey_id": survey_id,
+                "message": "Die Umfrage wurde gestartet!"
+            })
+            
+            # Host bestätigen
+            await host_websocket.send_text(json.dumps({
+                "type": "survey_start_confirmed",
+                "survey_id": survey_id
+            }))
+            
+        db.close()
+    except Exception as e:
+        print(f"Error starting survey: {e}")
+
+async def handle_end_survey(survey_id: str, host_websocket: WebSocket):
+    """Survey beenden"""
+    try:
+        # Status in Datenbank ändern
+        db = SessionLocal()
+        survey_db = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
+        if survey_db:
+            survey_db.status = SurveyStatus.FINISHED.value
+            db.commit()
+            
+            # Allen Teilnehmern Bescheid geben
+            await ws_manager.broadcast_to_participants(survey_id, {
+                "type": "survey_finished",
+                "survey_id": survey_id,
+                "message": "Die Umfrage wurde beendet!"
+            })
+            
+            # Host bestätigen
+            await host_websocket.send_text(json.dumps({
+                "type": "survey_end_confirmed",
+                "survey_id": survey_id
+            }))
+            
+        db.close()
+    except Exception as e:
+        print(f"Error ending survey: {e}")
 
 ### not needed for vercel deployment
 #

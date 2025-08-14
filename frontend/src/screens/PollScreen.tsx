@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { getPublicSurvey, submitSurveyResponse, type Survey, type Question } from "../lib/api";
+import { useWebSocketStable as useWebSocket, type WebSocketMessage } from "../hooks/useWebSocketStable";
 
 const PollScreen: React.FC = () => {
   const { id: pollId } = useParams<{ id: string }>();
@@ -25,6 +26,25 @@ const PollScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // WebSocket für Live-Updates vom Survey-Host
+  const { isConnected } = useWebSocket({
+    surveyId: pollId && pollId !== 'undefined' ? pollId : null,
+    role: 'participant',
+    onMessage: (message: WebSocketMessage) => {
+      switch (message.type) {
+        case 'survey_started':
+          // Survey wurde gestartet - automatisch zu aktivem Survey wechseln
+          setSurvey(prev => prev ? { ...prev, status: 'active' } : null);
+          break;
+        case 'survey_finished':
+          // Survey wurde beendet
+          setSurvey(prev => prev ? { ...prev, status: 'finished' } : null);
+          break;
+      }
+    },
+    enabled: !!pollId && !isSubmitted
+  });
 
   // Lade Umfragedaten beim Komponenten-Mount
   useEffect(() => {
@@ -50,8 +70,8 @@ const PollScreen: React.FC = () => {
       // Initialisiere Antworten-Objekt für alle unterstützten Fragetypen
       const initialAnswers: Record<string, string | string[] | number | boolean | null> = {};
       surveyData.questions
-        .filter(question => ['multiple_choice', 'text', 'single_choice', 'rating', 'yes_no'].includes(question.type))
-        .forEach(question => {
+        .filter((question: Question) => ['multiple_choice', 'text', 'single_choice', 'rating', 'yes_no'].includes(question.type))
+        .forEach((question: Question) => {
           if (question.type === 'multiple_choice') {
             initialAnswers[question.id] = [];
           } else if (question.type === 'rating') {
@@ -126,7 +146,7 @@ const PollScreen: React.FC = () => {
 
       await submitSurveyResponse(responseData);
       setIsSubmitted(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fehler beim Senden der Antworten:", error);
       setErrorMessage("Fehler beim Senden der Antworten. Bitte versuche es erneut.");
     } finally {
@@ -135,14 +155,6 @@ const PollScreen: React.FC = () => {
   };
 
   // Event Handler
-  const handleMultipleChoiceChange = (questionId: string, option: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: option,
-    }));
-    if (errorMessage) setErrorMessage("");
-  };
-
   const handleSingleChoiceChange = (questionId: string, option: string) => {
     setAnswers(prev => ({
       ...prev,

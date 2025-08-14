@@ -10,9 +10,13 @@ import {
   TrendingUp,
   AlertCircle,
   X,
+  Users,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { getSurvey, updateSurveyStatus, type Survey } from "../lib/api";
+import { useWebSocketStable as useWebSocket, type WebSocketMessage } from "../hooks/useWebSocketStable";
 
 const ManageScreen: React.FC = () => {
   const { id: pollId } = useParams<{ id: string }>();
@@ -22,6 +26,29 @@ const ManageScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [waitingParticipants, setWaitingParticipants] = useState(0);
+
+  // WebSocket für Live-Updates - NEUE STABILE VERSION
+  const { isConnected, sendMessage } = useWebSocket({
+    surveyId: pollId && pollId !== 'undefined' ? pollId : null,
+    role: 'host',
+    onMessage: (message: WebSocketMessage) => {
+      switch (message.type) {
+        case 'participant_joined':
+        case 'participant_left':
+          setWaitingParticipants(message.waiting_count || 0);
+          break;
+        case 'initial_stats':
+          setWaitingParticipants(message.waiting_count || 0);
+          break;
+        case 'survey_start_confirmed':
+          // Survey wurde gestartet, zu Results weiterleiten
+          navigate(`/my-polls/${pollId}/result`);
+          break;
+      }
+    },
+    enabled: survey?.status === 'ready'
+  });
 
   useEffect(() => {
     if (!pollId || pollId.length !== 4) {
@@ -142,7 +169,8 @@ const ManageScreen: React.FC = () => {
     pollId: pollId || "-",
   };
   
-  const participants: never[] = [];
+  // Live-Teilnehmer basierend auf WebSocket-Updates
+  const participants = Array(waitingParticipants).fill(null);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(surveyDetails.directLink);
@@ -155,9 +183,17 @@ const ManageScreen: React.FC = () => {
     
     try {
       setIsLoading(true);
+      
+      // WebSocket-Nachricht senden (wird zu allen Teilnehmern weitergeleitet)
+      sendMessage({
+        type: 'start_survey',
+        survey_id: survey.id
+      });
+      
+      // Fallback: Auch über API Status ändern
       await updateSurveyStatus(survey.id, 'active');
-      // Redirect to result page after starting
-      navigate(`/my-polls/${survey.id}/result`);
+      
+      // Navigation wird über WebSocket-Callback ausgelöst
     } catch (error) {
       console.error('Error starting survey:', error);
       setIsLoading(false);
@@ -227,7 +263,16 @@ const ManageScreen: React.FC = () => {
                   ) : (
                     <>
                       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      Bereit zum Start - warten auf Teilnehmer...
+                      Bereit zum Start - Live-Verbindung {isConnected ? "aktiv" : "inaktiv"}
+                      {isConnected ? (
+                        <span title="Live-Verbindung aktiv">
+                          <Wifi className="w-4 h-4 text-green-500" />
+                        </span>
+                      ) : (
+                        <span title="Keine Live-Verbindung">
+                          <WifiOff className="w-4 h-4 text-red-500" />
+                        </span>
+                      )}
                     </>
                   )}
                 </p>
