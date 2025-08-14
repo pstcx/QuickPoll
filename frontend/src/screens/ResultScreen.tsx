@@ -5,9 +5,10 @@ import {
   TrendingUp,
   AlertCircle,
   Star,
+  Download,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSurvey, getSurveyResponses, updateSurveyStatus, type Survey, type Question, type Response } from "../lib/api";
+import { getSurvey, getSurveyResponses, updateSurveyStatus, exportSurveyToExcel, type Survey, type Question, type Response } from "../lib/api";
 
 // Process response data for different question types
 interface ProcessedQuestion {
@@ -28,6 +29,7 @@ const ResultScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEndingPoll, setIsEndingPoll] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!pollId || pollId.length !== 4) {
@@ -222,17 +224,43 @@ const ResultScreen: React.FC = () => {
   };
 
   const handleExportResults = () => {
-    if(survey.status === 'active') {
+    if (survey?.status === 'active') {
       setShowExportModal(true);
     } else {
       confirmExport();
     }
   };
 
-  const confirmExport = () => {
+  const confirmExport = async () => {
+    if (!pollId || !survey) return;
+    
     setShowExportModal(false);
-    // Here you would implement actual export functionality
-    alert("Ergebnisse werden exportiert...");
+    setIsExporting(true);
+    
+    try {
+      // Excel-Datei vom Backend abrufen
+      const blob = await exportSurveyToExcel(pollId);
+      
+      // Download-Link erstellen
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `PollExport_${survey.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Download starten
+      document.body.appendChild(link);
+      link.click();
+      
+      // Aufräumen
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Export fehlgeschlagen:', error);
+      alert('Export fehlgeschlagen. Bitte versuchen Sie es erneut.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const cancelExport = () => {
@@ -468,9 +496,24 @@ const ResultScreen: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={handleExportResults}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                disabled={isExporting}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 ${
+                  isExporting
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
               >
-                Ergebnisse exportieren
+                {isExporting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Exportiere...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Ergebnisse exportieren
+                  </>
+                )}
               </button>
               {survey?.status === 'active' && (
                 <button

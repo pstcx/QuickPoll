@@ -162,8 +162,8 @@ export async function getSurveyResponses(surveyId: string): Promise<Response[]> 
 /**
  * Neue Antwort für eine Umfrage erstellen
  */
-export async function submitSurveyResponse(surveyId: string, responseData: ResponseSubmission): Promise<Response> {
-  return apiRequest(`/surveys/${surveyId}/responses`, {
+export async function submitSurveyResponse(responseData: ResponseSubmission): Promise<Response> {
+  return apiRequest(`/responses/`, {
     method: 'POST',
     body: JSON.stringify(responseData),
   });
@@ -176,4 +176,22 @@ export async function updateSurveyStatus(surveyId: string, status: 'ready' | 'ac
   return apiRequest(`/surveys/${surveyId}/status?status=${status}`, {
     method: 'PUT',
   });
+}
+
+/**
+ * Umfrage-Ergebnisse als Excel exportieren
+ */
+export async function exportSurveyToExcel(surveyId: string): Promise<Blob> {
+  const response = await fetch(`${BASE_URL}/surveys/${surveyId}/export/`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.blob();
 }

@@ -183,10 +183,10 @@ const DashboardScreen = () => {
                       </svg>
                       <span>Status:</span>
                       {survey.status === 'ready' ? 
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Bereit zum Start</span> : 
+                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">Bereit zum Start</span> : 
                         survey.status === 'active' ? 
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Gestartet</span> :
-                        <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">Beendet</span>
+                        <span className="bg-red-100 text-red-500 px-2 py-1 rounded-full text-xs font-medium">Beendet</span>
                       }
                     </div>
                   </div>

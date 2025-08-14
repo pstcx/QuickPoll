@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -7,6 +8,11 @@ from enum import Enum
 import uuid
 import json
 import random
+import os
+import tempfile
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
 
 # Status Enum für Umfragen
 class SurveyStatus(str, Enum):
@@ -595,6 +601,203 @@ async def get_survey_analytics(survey_id: str, db: Session = Depends(get_db)):
             }
     
     return analytics
+
+# Export Endpoint
+@app.get("/surveys/{survey_id}/export/", tags=["Export"])
+async def export_survey_to_excel(survey_id: str, db: Session = Depends(get_db)):
+    """Exportiert Umfrage-Ergebnisse als Excel-Datei"""
+    
+    # Umfrage finden
+    survey = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Umfrage nicht gefunden")
+    
+    # Fragen laden
+    questions = db.query(QuestionDB).filter(QuestionDB.survey_id == survey_id).order_by(QuestionDB.order).all()
+    if not questions:
+        raise HTTPException(status_code=404, detail="Keine Fragen für diese Umfrage gefunden")
+    
+    # Antworten laden
+    responses = db.query(ResponseDB).filter(ResponseDB.survey_id == survey_id).all()
+    
+    # Excel-Datei erstellen
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Umfrage Ergebnisse"
+    
+    # Header-Style
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Umfrage-Informationen
+    ws['A1'] = "Umfrage-Titel:"
+    ws['B1'] = survey.title
+    ws['A2'] = "Beschreibung:"
+    ws['B2'] = survey.description or "Keine Beschreibung"
+    ws['A3'] = "Status:"
+    ws['B3'] = survey.status
+    ws['A4'] = "Erstellt am:"
+    ws['B4'] = survey.created_at.strftime("%d.%m.%Y %H:%M")
+    ws['A5'] = "Antworten gesamt:"
+    ws['B5'] = len(responses)
+    
+    # Style für Umfrage-Info
+    for row in range(1, 6):
+        ws[f'A{row}'].font = Font(bold=True)
+    
+    current_row = 7
+    
+    # Für jede Frage
+    for question_idx, question in enumerate(questions, 1):
+        # Frage-Header
+        ws[f'A{current_row}'] = f"Frage {question_idx}: {question.title}"
+        ws[f'A{current_row}'].font = header_font
+        ws[f'A{current_row}'].fill = header_fill
+        ws[f'A{current_row}'].alignment = header_alignment
+        
+        # Merge cells für Frage-Header
+        ws.merge_cells(f'A{current_row}:D{current_row}')
+        current_row += 1
+        
+        # Fragen-spezifische Daten verarbeiten
+        question_responses = []
+        for response in responses:
+            for answer in response.answers:
+                if answer.get('question_id') == question.id:
+                    question_responses.append({
+                        'participant': response.participant_name or f"Teilnehmer {response.id[:8]}",
+                        'answer': answer.get('answer', ''),
+                        'submitted_at': response.submitted_at
+                    })
+        
+        if question.type in ['single_choice', 'multiple_choice', 'yes_no']:
+            # Auswahl-Fragen: Zusammenfassung
+            ws[f'A{current_row}'] = "Option"
+            ws[f'B{current_row}'] = "Anzahl"
+            ws[f'C{current_row}'] = "Prozent"
+            
+            # Header-Style für Spalten
+            for col in ['A', 'B', 'C']:
+                ws[f'{col}{current_row}'].font = Font(bold=True)
+                ws[f'{col}{current_row}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            
+            current_row += 1
+            
+            # Optionen zählen
+            option_counts = {}
+            total_responses = len(question_responses)
+            
+            for resp in question_responses:
+                answer = resp['answer']
+                if question.type == 'multiple_choice':
+                    # Multiple Choice kann mehrere Antworten haben
+                    if isinstance(answer, list):
+                        for option in answer:
+                            option_counts[option] = option_counts.get(option, 0) + 1
+                    else:
+                        option_counts[answer] = option_counts.get(answer, 0) + 1
+                else:
+                    option_counts[answer] = option_counts.get(answer, 0) + 1
+            
+            # Optionen auflisten
+            for option, count in option_counts.items():
+                percentage = (count / total_responses * 100) if total_responses > 0 else 0
+                ws[f'A{current_row}'] = option
+                ws[f'B{current_row}'] = count
+                ws[f'C{current_row}'] = f"{percentage:.1f}%"
+                current_row += 1
+                
+        elif question.type == 'rating':
+            # Rating-Fragen: Statistiken
+            ws[f'A{current_row}'] = "Bewertung"
+            ws[f'B{current_row}'] = "Anzahl"
+            ws[f'C{current_row}'] = "Prozent"
+            
+            # Header-Style
+            for col in ['A', 'B', 'C']:
+                ws[f'{col}{current_row}'].font = Font(bold=True)
+                ws[f'{col}{current_row}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            
+            current_row += 1
+            
+            # Bewertungen zählen
+            ratings = []
+            for resp in question_responses:
+                try:
+                    rating = int(resp['answer'])
+                    if 1 <= rating <= 5:
+                        ratings.append(rating)
+                except (ValueError, TypeError):
+                    continue
+            
+            # Rating-Verteilung
+            for rating in range(1, 6):
+                count = ratings.count(rating)
+                percentage = (count / len(ratings) * 100) if ratings else 0
+                ws[f'A{current_row}'] = f"{rating} Stern{'e' if rating != 1 else ''}"
+                ws[f'B{current_row}'] = count
+                ws[f'C{current_row}'] = f"{percentage:.1f}%"
+                current_row += 1
+            
+            # Durchschnitt
+            if ratings:
+                avg_rating = sum(ratings) / len(ratings)
+                ws[f'A{current_row}'] = "Durchschnitt:"
+                ws[f'B{current_row}'] = f"{avg_rating:.2f}"
+                ws[f'A{current_row}'].font = Font(bold=True)
+                current_row += 1
+                
+        elif question.type == 'text':
+            # Text-Fragen: Alle Antworten auflisten
+            ws[f'A{current_row}'] = "Teilnehmer"
+            ws[f'B{current_row}'] = "Antwort"
+            ws[f'C{current_row}'] = "Zeitpunkt"
+            
+            # Header-Style
+            for col in ['A', 'B', 'C']:
+                ws[f'{col}{current_row}'].font = Font(bold=True)
+                ws[f'{col}{current_row}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            
+            current_row += 1
+            
+            # Antworten auflisten
+            for resp in question_responses:
+                ws[f'A{current_row}'] = resp['participant']
+                ws[f'B{current_row}'] = resp['answer'] or "Keine Antwort"
+                ws[f'C{current_row}'] = resp['submitted_at'].strftime("%d.%m.%Y %H:%M")
+                current_row += 1
+        
+        current_row += 2  # Leerzeile zwischen Fragen
+    
+    # Spaltenbreite anpassen
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Temporäre Datei erstellen
+    temp_dir = tempfile.gettempdir()
+    filename = f"umfrage_{survey_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filepath = os.path.join(temp_dir, filename)
+    
+    # Excel-Datei speichern
+    wb.save(filepath)
+    
+    # Datei als Download zurückgeben
+    return FileResponse(
+        filepath,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=filename,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 # Health Check
 @app.get("/health/", tags=["Health"])
