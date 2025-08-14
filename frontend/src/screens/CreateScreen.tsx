@@ -1,9 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrashIcon } from "@heroicons/react/24/solid";
-import { createSurvey, type CreateSurveyData } from "../lib/api";
+import { createSurvey } from "../lib/api";
 import ConfirmDialog from "./Components/ConfirmDialog";
 
+type CreateQuestionData = {
+  title: string;
+  type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'yes_no';
+  options?: string[];
+  required: boolean;
+  description?: string;
+};
+
+type CreateSurveyData = {
+  title: string;
+  description?: string;
+  status: 'ready' | 'active' | 'finished';
+  questions: CreateQuestionData[];
+};
 type QuestionType = "text" | "single_choice" | "multiple_choice" | "rating" | "yes_no";
 
 interface Question {
@@ -121,7 +135,7 @@ export default function CreateScreen() {
       const surveyData: CreateSurveyData = {
         title: title.trim(),
         description: description.trim() || undefined,
-        is_active: true,
+        status: 'ready',
         questions: questions.map((q) => ({
           title: q.title.trim(),
           type: q.type,
@@ -133,7 +147,7 @@ export default function CreateScreen() {
         }))
       };
 
-      const newSurvey = await createSurvey(surveyData);
+      const newSurvey = await createSurvey(surveyData as any);
       console.log("Umfrage erfolgreich erstellt:", newSurvey);
       
       // Zurück zum Dashboard navigieren
