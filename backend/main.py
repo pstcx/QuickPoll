@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -290,17 +290,33 @@ app = FastAPI(
 )
 
 # CORS Middleware für Frontend-Integration
+# Permissive CORS für Debugging
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://quick-poll-eta.vercel.app",  # Produktion
-        "http://localhost:5173",        # Vite dev server / nicht auf Prod aktivieren
-        "null"                          # Für file:// URLs (lokale HTML-Dateien)
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # Temporarily allow all origins
+    allow_credentials=False,  # Must be False with allow_origins=["*"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Global Exception Handler für bessere Fehlerbehandlung
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle all unhandled exceptions"""
+    import traceback
+    error_details = traceback.format_exc()
+    print(f"Unhandled exception: {str(exc)}")
+    print(f"Traceback: {error_details}")
+    
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # Helper Functions
 def generate_session_id() -> str:
@@ -1036,6 +1052,20 @@ async def root():
         "redoc": "/redoc",
         "version": "1.0.0"
     }
+
+# CORS Preflight Handler
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle CORS preflight requests"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        }
+    )
 
 # Migration: Bestehende Umfragen ohne owner_session updaten
 def migrate_existing_surveys():

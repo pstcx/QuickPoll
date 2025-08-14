@@ -73,7 +73,7 @@ async function apiRequest<T>(
       'X-Session-ID': sessionId,
       ...options.headers,
     },
-    credentials: 'include', // Für Cookies
+    // credentials: 'include', // Disabled for CORS compatibility
     ...options,
   };
 
