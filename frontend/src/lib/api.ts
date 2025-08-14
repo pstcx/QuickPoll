@@ -1,5 +1,7 @@
 // Zentrale API-Konfiguration und Methoden für QuickPoll
 
+import { getSessionId } from './session';
+
 //const BASE_URL = 'https://quick-poll-a49h.vercel.app';
 const BASE_URL = 'http://localhost:8000';
 
@@ -78,11 +80,16 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
   
+  // Session-ID zu Headers hinzufügen
+  const sessionId = getSessionId();
+  
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
+      'X-Session-ID': sessionId,
       ...options.headers,
     },
+    credentials: 'include', // Für Cookies
     ...options,
   };
 
@@ -110,10 +117,17 @@ export async function getSurveys(): Promise<Survey[]> {
 }
 
 /**
- * Eine spezifische Umfrage abrufen
+ * Eine spezifische Umfrage abrufen (für Manager/Besitzer)
  */
 export async function getSurvey(id: string): Promise<Survey> {
   return apiRequest<Survey>(`/surveys/${id}`);
+}
+
+/**
+ * Eine spezifische Umfrage öffentlich abrufen (für Teilnehmer)
+ */
+export async function getPublicSurvey(id: string): Promise<Survey> {
+  return apiRequest<Survey>(`/public/surveys/${id}`);
 }
 
 /**

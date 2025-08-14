@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -21,7 +21,7 @@ class SurveyStatus(str, Enum):
     FINISHED = "finished"  # Umfrage beendet
 
 # SQLAlchemy Imports
-from sqlalchemy import create_engine, String, DateTime, Boolean, Integer, Text, JSON
+from sqlalchemy import create_engine, String, DateTime, Boolean, Integer, Text, JSON, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
 
 # Datenbank Setup
@@ -43,6 +43,7 @@ class SurveyDB(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     response_count: Mapped[int] = mapped_column(Integer, default=0)
+    owner_session: Mapped[str] = mapped_column(String, nullable=False, index=True, default="")
 
 class QuestionDB(Base):
     __tablename__ = "questions"
@@ -162,6 +163,24 @@ app.add_middleware(
 )
 
 # Helper Functions
+def generate_session_id() -> str:
+    """Generiert eine eindeutige Session-ID"""
+    return str(uuid.uuid4()) + "-" + str(int(datetime.now().timestamp()))
+
+def get_session_id_from_header(request: Request) -> str:
+    """Extrahiert Session-ID aus Header, falls vorhanden"""
+    session_id = request.headers.get("X-Session-ID")
+    if not session_id:
+        session_id = generate_session_id()
+    return session_id
+
+def check_survey_ownership(db: Session, survey_id: str, session_id: str) -> bool:
+    """Prüft ob eine Umfrage dem aktuellen Session gehört"""
+    survey = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
+    if not survey:
+        return False
+    return survey.owner_session == session_id
+
 def generate_survey_id(db: Session) -> str:
     """Generiert eine eindeutige 4-stellige Umfrage-ID"""
     while True:
@@ -230,7 +249,7 @@ def get_survey_with_questions(db: Session, survey_id: str) -> Survey:
 
 # Survey Endpoints
 @app.post("/surveys/", response_model=Survey, tags=["Surveys"])
-async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
+async def create_survey(survey_data: SurveyCreate, request: Request, db: Session = Depends(get_db)):
     """
     Erstellt eine neue Umfrage mit Fragen in der SQLite-Datenbank.
     
@@ -240,6 +259,9 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
     
     Umfragen haben eine 4-stellige ID und laufen nach 7 Tagen ab.
     """
+    # Session-ID aus Header extrahieren
+    session_id = get_session_id_from_header(request)
+    
     # Bereinige abgelaufene Umfragen vor der Erstellung einer neuen
     cleanup_expired_surveys(db)
     
@@ -255,7 +277,8 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
         status=SurveyStatus.READY.value,  # Standardmäßig "ready"
         created_at=now,
         expires_at=expires_at,
-        response_count=0
+        response_count=0,
+        owner_session=session_id  # Session-ID des Erstellers
     )
     db.add(survey_db)
     
@@ -303,12 +326,16 @@ async def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)
     )
 
 @app.get("/surveys/", response_model=List[Survey], tags=["Surveys"])
-async def get_all_surveys(db: Session = Depends(get_db)):
-    """Alle Umfragen aus der Datenbank abrufen (bereinigt automatisch abgelaufene)"""
+async def get_all_surveys(request: Request, db: Session = Depends(get_db)):
+    """Alle Umfragen des aktuellen Sessions aus der Datenbank abrufen (bereinigt automatisch abgelaufene)"""
+    # Session-ID extrahieren
+    session_id = get_session_id_from_header(request)
+    
     # Bereinige abgelaufene Umfragen vor der Abfrage
     cleanup_expired_surveys(db)
     
-    surveys_db = db.query(SurveyDB).all()
+    # Nur eigene Umfragen abrufen
+    surveys_db = db.query(SurveyDB).filter(SurveyDB.owner_session == session_id).all()
     surveys = []
     
     for survey_db in surveys_db:
@@ -318,9 +345,28 @@ async def get_all_surveys(db: Session = Depends(get_db)):
     return surveys
 
 @app.get("/surveys/{survey_id}", response_model=Survey, tags=["Surveys"])
-async def get_survey(survey_id: str, db: Session = Depends(get_db)):
-    """Eine spezifische Umfrage aus der Datenbank abrufen"""
+async def get_survey(survey_id: str, request: Request, db: Session = Depends(get_db)):
+    """Eine spezifische Umfrage aus der Datenbank abrufen (nur eigene Umfragen)"""
+    # Session-ID extrahieren
+    session_id = get_session_id_from_header(request)
+    
+    # Ownership prüfen
+    if not check_survey_ownership(db, survey_id, session_id):
+        raise HTTPException(
+            status_code=403, 
+            detail="Access denied. You can only access your own surveys."
+        )
+    
     return get_survey_with_questions(db, survey_id)
+
+# Public Endpoints (für Teilnehmer)
+@app.get("/public/surveys/{survey_id}", response_model=Survey, tags=["Public"])
+async def get_public_survey(survey_id: str, db: Session = Depends(get_db)):
+    """Öffentlicher Zugriff auf eine Umfrage für Teilnehmer"""
+    try:
+        return get_survey_with_questions(db, survey_id)
+    except HTTPException:
+        raise HTTPException(status_code=404, detail="Umfrage nicht gefunden oder nicht verfügbar")
 
 @app.put("/surveys/{survey_id}", response_model=Survey, tags=["Surveys"])
 async def update_survey(survey_id: str, survey_data: SurveyBase, db: Session = Depends(get_db)):
@@ -337,8 +383,16 @@ async def update_survey(survey_id: str, survey_data: SurveyBase, db: Session = D
     return get_survey_with_questions(db, survey_id)
 
 @app.put("/surveys/{survey_id}/status", response_model=Survey, tags=["Surveys"])
-async def update_survey_status(survey_id: str, status: SurveyStatus, db: Session = Depends(get_db)):
-    """Status einer Umfrage ändern"""
+async def update_survey_status(survey_id: str, status: SurveyStatus, request: Request, db: Session = Depends(get_db)):
+    """Status einer Umfrage ändern (nur eigene Umfragen)"""
+    # Session-ID extrahieren und Ownership prüfen
+    session_id = get_session_id_from_header(request)
+    if not check_survey_ownership(db, survey_id, session_id):
+        raise HTTPException(
+            status_code=403, 
+            detail="Access denied. You can only modify your own surveys."
+        )
+    
     survey_db = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
     if not survey_db:
         raise HTTPException(status_code=404, detail="Umfrage nicht gefunden")
@@ -349,8 +403,16 @@ async def update_survey_status(survey_id: str, status: SurveyStatus, db: Session
     return get_survey_with_questions(db, survey_id)
 
 @app.delete("/surveys/{survey_id}", tags=["Surveys"])
-async def delete_survey(survey_id: str, db: Session = Depends(get_db)):
-    """Umfrage und alle zugehörigen Daten aus der Datenbank löschen"""
+async def delete_survey(survey_id: str, request: Request, db: Session = Depends(get_db)):
+    """Umfrage und alle zugehörigen Daten aus der Datenbank löschen (nur eigene Umfragen)"""
+    # Session-ID extrahieren und Ownership prüfen
+    session_id = get_session_id_from_header(request)
+    if not check_survey_ownership(db, survey_id, session_id):
+        raise HTTPException(
+            status_code=403, 
+            detail="Access denied. You can only delete your own surveys."
+        )
+    
     survey_db = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
     if not survey_db:
         raise HTTPException(status_code=404, detail="Umfrage nicht gefunden")
@@ -508,8 +570,16 @@ async def submit_response(response_data: ResponseSubmission, db: Session = Depen
     )
 
 @app.get("/surveys/{survey_id}/responses/", response_model=List[Response], tags=["Responses"])
-async def get_survey_responses(survey_id: str, db: Session = Depends(get_db)):
-    """Alle Antworten zu einer Umfrage aus der Datenbank abrufen"""
+async def get_survey_responses(survey_id: str, request: Request, db: Session = Depends(get_db)):
+    """Alle Antworten zu einer Umfrage aus der Datenbank abrufen (nur für Survey-Besitzer)"""
+    # Session-ID extrahieren und Ownership prüfen
+    session_id = get_session_id_from_header(request)
+    if not check_survey_ownership(db, survey_id, session_id):
+        raise HTTPException(
+            status_code=403, 
+            detail="Access denied. You can only view responses of your own surveys."
+        )
+    
     responses_db = db.query(ResponseDB).filter(ResponseDB.survey_id == survey_id).all()
     
     responses = []
@@ -825,6 +895,52 @@ async def root():
         "redoc": "/redoc",
         "version": "1.0.0"
     }
+
+# Migration: Bestehende Umfragen ohne owner_session updaten
+def migrate_existing_surveys():
+    """Migriert bestehende Umfragen ohne owner_session"""
+    db = SessionLocal()
+    try:
+        # Prüfe ob die owner_session Spalte existiert
+        result = db.execute(text("PRAGMA table_info(surveys)")).fetchall()
+        columns = [row[1] for row in result]
+        
+        if 'owner_session' not in columns:
+            print("Füge owner_session Spalte zur surveys Tabelle hinzu...")
+            db.execute(text("ALTER TABLE surveys ADD COLUMN owner_session TEXT DEFAULT ''"))
+            db.commit()
+            
+            # Setze Default-Session für bestehende Umfragen
+            default_session = generate_session_id()
+            result = db.execute(text("UPDATE surveys SET owner_session = :session WHERE owner_session = '' OR owner_session IS NULL"), 
+                              {"session": default_session})
+            db.commit()
+            print(f"Migration abgeschlossen. {result.rowcount} Umfragen aktualisiert.")
+        else:
+            # Prüfe ob es Umfragen ohne owner_session gibt
+            surveys_without_session = db.execute(
+                text("SELECT id FROM surveys WHERE owner_session IS NULL OR owner_session = ''")
+            ).fetchall()
+            
+            if surveys_without_session:
+                default_session = generate_session_id()
+                print(f"Migriere {len(surveys_without_session)} bestehende Umfragen mit Session: {default_session}")
+                
+                db.execute(
+                    text("UPDATE surveys SET owner_session = :session WHERE owner_session = '' OR owner_session IS NULL"),
+                    {"session": default_session}
+                )
+                
+                db.commit()
+                print("Migration abgeschlossen.")
+                
+    except Exception as e:
+        print(f"Migrations-Fehler (kann ignoriert werden): {e}")
+    finally:
+        db.close()
+
+# Migration beim Start ausführen
+migrate_existing_surveys()
 
 ### not needed for vercel deployment
 #

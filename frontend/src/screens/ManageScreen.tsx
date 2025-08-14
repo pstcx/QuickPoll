@@ -61,16 +61,22 @@ const ManageScreen: React.FC = () => {
         return;
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading survey:', error);
-      setError("Poll nicht gefunden oder nicht verfügbar.");
+      
+      // Prüfe auf 403 Unauthorized Fehler
+      if (error.message?.includes('403')) {
+        setError("Du hast keine Berechtigung, auf diese Umfrage zuzugreifen. Du kannst nur deine eigenen Umfragen verwalten.");
+      } else {
+        setError("Poll nicht gefunden oder nicht verfügbar.");
+      }
       setSurvey(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!pollId || pollId.length !== 4 || error) {
+  if (!pollId || pollId.length !== 4) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -79,6 +85,21 @@ const ManageScreen: React.FC = () => {
           </div>
           <span className="text-red-800 font-medium">
             Fehler - Es wurde eine ungültige Poll-ID übergeben.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+            {error}
           </span>
         </div>
       </div>

@@ -12,7 +12,7 @@ import {
   ThumbsDown,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { getSurvey, submitSurveyResponse, type Survey, type Question } from "../lib/api";
+import { getPublicSurvey, submitSurveyResponse, type Survey, type Question } from "../lib/api";
 
 const PollScreen: React.FC = () => {
   const { id: pollId } = useParams<{ id: string }>();
@@ -44,7 +44,7 @@ const PollScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const surveyData = await getSurvey(pollId);
+      const surveyData = await getPublicSurvey(pollId);
       setSurvey(surveyData);
       
       // Initialisiere Antworten-Objekt für alle unterstützten Fragetypen

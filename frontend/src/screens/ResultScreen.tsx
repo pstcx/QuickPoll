@@ -56,13 +56,25 @@ const ResultScreen: React.FC = () => {
       setSurvey(surveyData);
       setResponses(responseData);
       
+      // Wenn Umfrage noch im Status "ready" ist, zum ManageScreen weiterleiten
+      if (surveyData.status === 'ready') {
+        navigate(`/my-polls/${pollId}`);
+        return;
+      }
+      
       // Process question data for visualization
       const processed = processQuestionData(surveyData.questions, responseData);
       setProcessedQuestions(processed);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading survey data:', error);
-      setError("Poll nicht gefunden oder nicht verfügbar.");
+      
+      // Prüfe auf 403 Unauthorized Fehler
+      if (error.message?.includes('403')) {
+        setError("Du hast keine Berechtigung, auf diese Umfrage zuzugreifen. Du kannst nur deine eigenen Umfragen einsehen.");
+      } else {
+        setError("Poll nicht gefunden oder nicht verfügbar.");
+      }
     } finally {
       setLoading(false);
     }
@@ -173,7 +185,7 @@ const ResultScreen: React.FC = () => {
     });
   };
 
-  if (!pollId || pollId.length !== 4 || error) {
+  if (!pollId || pollId.length !== 4) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -181,7 +193,22 @@ const ResultScreen: React.FC = () => {
             <AlertCircle className="w-5 h-5 text-red-600" />
           </div>
           <span className="text-red-800 font-medium">
-            {error || "Ungültige Poll-ID. Die ID muss genau 4 Zeichen lang sein."}
+            Ungültige Poll-ID. Die ID muss genau 4 Zeichen lang sein.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-5 mt-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <span className="text-red-800 font-medium">
+            {error}
           </span>
         </div>
       </div>

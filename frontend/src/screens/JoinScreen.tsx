@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
 import { X, Users, QrCode } from "lucide-react";
-import { getSurvey } from "../lib/api";
+import { getPublicSurvey } from "../lib/api";
 import ConfirmDialog from "./Components/ConfirmDialog";
 
 const JoinScreen = () => {
@@ -45,8 +45,8 @@ const JoinScreen = () => {
 
   const validateAndNavigateToPoll = async (pollId: number) => {
     try {
-      // Poll-Daten vom Backend abrufen
-      const survey = await getSurvey(pollId.toString());
+      // Poll-Daten vom Backend abrufen (öffentliche API für Teilnehmer)
+      const survey = await getPublicSurvey(pollId.toString());
       
       // Status der Umfrage prüfen
       if (survey.status === 'finished') {
