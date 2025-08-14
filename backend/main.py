@@ -183,7 +183,7 @@ class SurveyDB(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     response_count: Mapped[int] = mapped_column(Integer, default=0)
-    owner_session: Mapped[str] = mapped_column(String, nullable=False, index=True, default="")
+    owner_session: Mapped[str] = mapped_column(String, nullable=True, index=True, default="")
 
 class QuestionDB(Base):
     __tablename__ = "questions"
@@ -209,6 +209,31 @@ class ResponseDB(Base):
 
 # Datenbank-Tabellen erstellen
 Base.metadata.create_all(bind=engine)
+
+# Sanfte Migration für owner_session Feld
+def ensure_owner_session_column():
+    """Fügt owner_session Spalte hinzu falls sie nicht existiert"""
+    db = SessionLocal()
+    try:
+        # Prüfe ob die owner_session Spalte existiert
+        result = db.execute(text("PRAGMA table_info(surveys)")).fetchall()
+        columns = [row[1] for row in result]
+        
+        if 'owner_session' not in columns:
+            print("Füge owner_session Spalte zur surveys Tabelle hinzu...")
+            db.execute(text("ALTER TABLE surveys ADD COLUMN owner_session TEXT DEFAULT ''"))
+            db.commit()
+            print("owner_session Spalte erfolgreich hinzugefügt.")
+            
+    except Exception as e:
+        print(f"Migration Info (kann ignoriert werden): {e}")
+        # Rollback bei Fehlern
+        db.rollback()
+    finally:
+        db.close()
+
+# Migration beim Start ausführen
+ensure_owner_session_column()
 
 # Pydantic Models für API (Request/Response)
 class QuestionType(str, Enum):
@@ -335,6 +360,9 @@ def check_survey_ownership(db: Session, survey_id: str, session_id: str) -> bool
     survey = db.query(SurveyDB).filter(SurveyDB.id == survey_id).first()
     if not survey:
         return False
+    # Falls owner_session leer/None ist, gehört Umfrage niemandem (legacy)
+    if not survey.owner_session:
+        return True
     return survey.owner_session == session_id
 
 def generate_survey_id(db: Session) -> str:
@@ -490,7 +518,7 @@ async def get_all_surveys(request: Request, db: Session = Depends(get_db)):
     # Bereinige abgelaufene Umfragen vor der Abfrage
     cleanup_expired_surveys(db)
     
-    # Nur eigene Umfragen abrufen
+    # Nur eigene Umfragen abrufen (Session-basiert)
     surveys_db = db.query(SurveyDB).filter(SurveyDB.owner_session == session_id).all()
     surveys = []
     
@@ -1066,53 +1094,6 @@ async def options_handler(path: str):
             "Access-Control-Max-Age": "86400",
         }
     )
-
-# Migration: Bestehende Umfragen ohne owner_session updaten
-def migrate_existing_surveys():
-    """Migriert bestehende Umfragen ohne owner_session"""
-    db = SessionLocal()
-    try:
-        # Prüfe ob die owner_session Spalte existiert
-        result = db.execute(text("PRAGMA table_info(surveys)")).fetchall()
-        columns = [row[1] for row in result]
-        
-        if 'owner_session' not in columns:
-            print("Füge owner_session Spalte zur surveys Tabelle hinzu...")
-            db.execute(text("ALTER TABLE surveys ADD COLUMN owner_session TEXT DEFAULT ''"))
-            db.commit()
-            
-            # Setze Default-Session für bestehende Umfragen
-            default_session = generate_session_id()
-            result = db.execute(text("UPDATE surveys SET owner_session = :session WHERE owner_session = '' OR owner_session IS NULL"), 
-                              {"session": default_session})
-            db.commit()
-            print(f"Migration abgeschlossen. {result.rowcount} Umfragen aktualisiert.")
-        else:
-            # Prüfe ob es Umfragen ohne owner_session gibt
-            surveys_without_session = db.execute(
-                text("SELECT id FROM surveys WHERE owner_session IS NULL OR owner_session = ''")
-            ).fetchall()
-            
-            if surveys_without_session:
-                default_session = generate_session_id()
-                print(f"Migriere {len(surveys_without_session)} bestehende Umfragen mit Session: {default_session}")
-                
-                db.execute(
-                    text("UPDATE surveys SET owner_session = :session WHERE owner_session = '' OR owner_session IS NULL"),
-                    {"session": default_session}
-                )
-                
-                db.commit()
-                print("Migration abgeschlossen.")
-                
-    except Exception as e:
-        print(f"Migrations-Fehler (kann ignoriert werden): {e}")
-    finally:
-        db.close()
-
-# Migration beim Start ausführen
-migrate_existing_surveys()
-
 # WebSocket Endpunkte
 @app.websocket("/ws/host/{survey_id}")
 async def websocket_host_endpoint(websocket: WebSocket, survey_id: str):
