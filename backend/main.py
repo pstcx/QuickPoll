@@ -165,7 +165,9 @@ from sqlalchemy import create_engine, String, DateTime, Boolean, Integer, Text, 
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
 
 # Datenbank Setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./survey_tool.db"
+# Für Vercel: Datenbank in /tmp schreiben da aktuelles Verzeichnis read-only ist
+DATABASE_PATH = "/tmp/survey_tool.db" if os.getenv("VERCEL") else "./survey_tool.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -208,32 +210,40 @@ class ResponseDB(Base):
     submitted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 # Datenbank-Tabellen erstellen
+print("Creating database tables...")
 Base.metadata.create_all(bind=engine)
+print("Database tables created successfully.")
 
 # Sanfte Migration für owner_session Feld
 def ensure_owner_session_column():
     """Fügt owner_session Spalte hinzu falls sie nicht existiert"""
     db = SessionLocal()
     try:
+        print("Prüfe owner_session Spalte...")
         # Prüfe ob die owner_session Spalte existiert
         result = db.execute(text("PRAGMA table_info(surveys)")).fetchall()
         columns = [row[1] for row in result]
+        print(f"Vorhandene Spalten: {columns}")
         
         if 'owner_session' not in columns:
             print("Füge owner_session Spalte zur surveys Tabelle hinzu...")
             db.execute(text("ALTER TABLE surveys ADD COLUMN owner_session TEXT DEFAULT ''"))
             db.commit()
             print("owner_session Spalte erfolgreich hinzugefügt.")
+        else:
+            print("owner_session Spalte bereits vorhanden.")
             
     except Exception as e:
-        print(f"Migration Info (kann ignoriert werden): {e}")
+        print(f"Migration Fehler: {e}")
         # Rollback bei Fehlern
         db.rollback()
     finally:
         db.close()
 
 # Migration beim Start ausführen
+print("Running database migration...")
 ensure_owner_session_column()
+print("Database migration completed.")
 
 # Pydantic Models für API (Request/Response)
 class QuestionType(str, Enum):
@@ -512,21 +522,28 @@ async def create_survey(survey_data: SurveyCreate, request: Request, db: Session
 @app.get("/surveys/", response_model=List[Survey], tags=["Surveys"])
 async def get_all_surveys(request: Request, db: Session = Depends(get_db)):
     """Alle Umfragen des aktuellen Sessions aus der Datenbank abrufen (bereinigt automatisch abgelaufene)"""
-    # Session-ID extrahieren
-    session_id = get_session_id_from_header(request)
+    try:
+        # Session-ID extrahieren
+        session_id = get_session_id_from_header(request)
+        print(f"Getting surveys for session: {session_id}")
+        
+        # Bereinige abgelaufene Umfragen vor der Abfrage
+        cleanup_expired_surveys(db)
+        
+        # Nur eigene Umfragen abrufen (Session-basiert)
+        surveys_db = db.query(SurveyDB).filter(SurveyDB.owner_session == session_id).all()
+        print(f"Found {len(surveys_db)} surveys for session {session_id}")
+        
+        surveys = []
+        for survey_db in surveys_db:
+            survey = get_survey_with_questions(db, survey_db.id)
+            surveys.append(survey)
+        
+        return surveys
     
-    # Bereinige abgelaufene Umfragen vor der Abfrage
-    cleanup_expired_surveys(db)
-    
-    # Nur eigene Umfragen abrufen (Session-basiert)
-    surveys_db = db.query(SurveyDB).filter(SurveyDB.owner_session == session_id).all()
-    surveys = []
-    
-    for survey_db in surveys_db:
-        survey = get_survey_with_questions(db, survey_db.id)
-        surveys.append(survey)
-    
-    return surveys
+    except Exception as e:
+        print(f"Error in get_all_surveys: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/surveys/{survey_id}", response_model=Survey, tags=["Surveys"])
 async def get_survey(survey_id: str, request: Request, db: Session = Depends(get_db)):
