@@ -68,6 +68,11 @@ const ResultScreen: React.FC = () => {
     }
   };
 
+  // Count number of submitted responses (1 per person who submitted)
+  const getSubmittedResponsesCount = () => {
+    return responses.length;
+  };
+
   // Process responses for each question type
   const processQuestionData = (questions: Question[], responses: Response[]): ProcessedQuestion[] => {
     return questions.map(question => {
@@ -482,12 +487,12 @@ const ResultScreen: React.FC = () => {
                   {survey?.status === 'finished' ? (
                     <>
                       <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                      Umfrage beendet • {responses.length} Teilnehmer
+                      Umfrage beendet • {responses.length} Teilnehmer aktiv • {getSubmittedResponsesCount()} abgegeben
                     </>
                   ) : (
                     <>
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      Live • {responses.length} Teilnehmer
+                      Live • {responses.length} Teilnehmer aktiv • {getSubmittedResponsesCount()} abgegeben
                     </>
                   )}
                 </p>
