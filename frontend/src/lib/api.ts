@@ -2,8 +2,9 @@
 
 import { getSessionId } from './session';
 
-//const BASE_URL = 'https://quick-poll-a49h.vercel.app';
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://quick-poll-a49h.vercel.app' 
+  : 'http://localhost:8000';
 
 // Type Definitions
 export interface Survey {

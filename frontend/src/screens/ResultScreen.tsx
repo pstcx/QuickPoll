@@ -6,8 +6,6 @@ import {
   AlertCircle,
   Star,
   Download,
-  Users,
-  Clock,
   Wifi,
   WifiOff,
 } from "lucide-react";
@@ -35,7 +33,6 @@ const ResultScreen: React.FC = () => {
   const [isEndingPoll, setIsEndingPoll] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [activeParticipants, setActiveParticipants] = useState(0);
   const [waitingParticipants, setWaitingParticipants] = useState(0);
 
   // WebSocket für Live-Updates

@@ -10,7 +10,6 @@ import {
   TrendingUp,
   AlertCircle,
   X,
-  Users,
   Wifi,
   WifiOff,
 } from "lucide-react";

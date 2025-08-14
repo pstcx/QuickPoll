@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Loader2,
   Clock,
-  Users,
   Star,
   ThumbsUp,
   ThumbsDown,
@@ -28,7 +27,7 @@ const PollScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   // WebSocket für Live-Updates vom Survey-Host
-  const { isConnected } = useWebSocket({
+  useWebSocket({
     surveyId: pollId && pollId !== 'undefined' ? pollId : null,
     role: 'participant',
     onMessage: (message: WebSocketMessage) => {

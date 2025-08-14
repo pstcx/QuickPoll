@@ -90,11 +90,12 @@ export function useWebSocketStable({
     console.log(`Actually connecting to WebSocket: ${role} for survey ${surveyId}`);
 
     try {
-      const sessionId = getSessionId();
-      const wsUrl = `ws://localhost:8000/ws/${role}/${surveyId}?session_id=${sessionId}`;
-      
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
+    const sessionId = getSessionId();
+    
+    const wsBaseUrl = process.env.NODE_ENV === 'production' ? 'wss://quick-poll-a49h.vercel.app' : 'ws://localhost:8000';
+    const wsUrl = `${wsBaseUrl}/ws/${role}/${surveyId}?session_id=${sessionId}`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
 
       ws.onopen = () => {
         if (!mountedRef.current) {
