@@ -3,6 +3,7 @@ import { useState } from "react";
 const MultipleChoiceScreen = () => {
   const [title, setTitle] = useState("");
   const [options, setOptions] = useState(["", ""]);
+  const [allowMultiple, setAllowMultiple] = useState(true);
 
   const handleAddOption = () => {
     setOptions([...options, ""]);
@@ -14,7 +15,7 @@ const MultipleChoiceScreen = () => {
     setOptions(newOptions);
   };
   const handleSubmit = () => {
-    console.log("Umfrage erstellen mit: ", title, options);
+    console.log("Umfrage erstellen mit: ", title, options, allowMultiple);
   };
 
   return (
@@ -37,7 +38,8 @@ const MultipleChoiceScreen = () => {
           onChange={(e) => handleChangeOption(index, e.target.value)}
         />
       ))}
-      <div className="flex gap-6 justify-center">
+
+      <div className="flex gap-6 justify-center mt-4">
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
           onClick={handleAddOption}
@@ -51,6 +53,16 @@ const MultipleChoiceScreen = () => {
         >
           Umfrage erstellen
         </button>
+
+        <label className="flex items-center mb-4">
+          <input
+            type="checkbox"
+            checked={allowMultiple}
+            onChange={(e) => setAllowMultiple(e.target.checked)}
+            className="w-4 h-4"
+          />
+          Mehrere Antworten erlauben
+        </label>
       </div>
     </div>
   );
