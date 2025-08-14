@@ -293,7 +293,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://quick-poll-eta.vercel.app/",  # Produktion
+        "https://quick-poll-eta.vercel.app",  # Produktion
         "http://localhost:5173",        # Vite dev server / nicht auf Prod aktivieren
         "null"                          # Für file:// URLs (lokale HTML-Dateien)
     ],
