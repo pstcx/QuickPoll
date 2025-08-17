@@ -18,8 +18,8 @@ const Header: React.FC<HeaderProps> = ({
         {showBackButton && (
           <button
             onClick={onBack}
-            className="flex items-center text-gray-600 mr-4 transition-all duration-200 rounded-lg px-3 py-2
-              hover:bg-blue-50 hover:text-blue-700 hover:shadow hover:scale-105"
+            className="flex items-center text-white mr-4 transition-all duration-200 rounded-lg px-3 py-2
+              hover:bg-blue-600 hover:text-white hover:shadow hover:scale-105"
           >
             <ChevronLeft size={20} className="mr-1" />
             <span className="text-sm font-medium">Zurück</span>
