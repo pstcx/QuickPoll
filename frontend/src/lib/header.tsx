@@ -18,14 +18,14 @@ const Header: React.FC<HeaderProps> = ({
         {showBackButton && (
           <button
             onClick={onBack}
-            className="flex items-center text-white mr-4 transition-all duration-200 rounded-lg px-3 py-2
-              hover:bg-blue-600 hover:text-white hover:shadow hover:scale-105"
+            className="flex items-center text-white mr-4 transition-all duration-200 rounded-lg px-4 py-2
+              bg-[#093a80] hover:bg-blue-600 hover:text-white hover:shadow hover:scale-105"
           >
             <ChevronLeft size={20} className="mr-1" />
             <span className="text-sm font-medium">Zurück</span>
           </button>
         )}
-        <h1 className="text-lg font-semibold text-white">{title}</h1>
+        <h1 className="text-lg font-semibold text-white">🗳️ {title}</h1>
       </div>
     </header>
   );

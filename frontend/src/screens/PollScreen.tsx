@@ -191,41 +191,46 @@ const PollScreen: React.FC = () => {
 
   // Render-Funktionen für Fragetypen
   const renderMultipleChoiceQuestion = (question: Question, index: number) => (
-    <div key={question.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+    <div key={question.id} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+      {/* Mobile-optimierter Header */}
       <div className="flex items-start gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
           {index + 1}
         </div>
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <CheckSquare className="w-5 h-5 text-blue-600" />
-        </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800 text-left">
-            {question.title}
-            {question.required && <span className="text-red-500 ml-1">*</span>}
-            {!question.required && (
-              <span className="text-sm text-gray-500 font-normal ml-2">
-                (optional)
-              </span>
-            )}
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-start gap-2 sm:gap-3 mb-2">
+            <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 text-left leading-tight">
+                {question.title}
+                {question.required && <span className="text-red-500 ml-1">*</span>}
+                {!question.required && (
+                  <span className="text-xs sm:text-sm text-gray-500 font-normal ml-2">
+                    (optional)
+                  </span>
+                )}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
               📋 Mehrfachauswahl
             </span>
-            <span className="text-xs text-gray-500">Du kannst mehrere Optionen auswählen</span>
+            <span className="text-xs text-gray-500 hidden sm:inline">Du kannst mehrere Optionen auswählen</span>
           </div>
         </div>
       </div>
       {question.description && (
-        <p className="text-gray-600 text-sm mb-4 ml-11">{question.description}</p>
+        <p className="text-sm text-gray-600 mb-4 pl-10 sm:pl-11">{question.description}</p>
       )}
 
-      <div className="space-y-3 ml-11">
+      <div className="space-y-2 sm:space-y-3 pl-10 sm:pl-11">
         {question.options?.map((option, optionIndex) => (
           <label
             key={optionIndex}
-            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors duration-200"
+            className="flex items-center gap-3 p-3 sm:p-3 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors duration-200 active:bg-blue-100"
           >
             <input
               type="checkbox"
@@ -241,9 +246,9 @@ const PollScreen: React.FC = () => {
                 }
                 if (errorMessage) setErrorMessage("");
               }}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            <span className="text-gray-700">{option}</span>
+            <span className="text-sm sm:text-base text-gray-700 leading-tight">{option}</span>
           </label>
         ))}
       </div>
@@ -251,76 +256,85 @@ const PollScreen: React.FC = () => {
   );
 
   const renderTextQuestion = (question: Question, index: number) => (
-    <div key={question.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
+    <div key={question.id} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
           {index + 1}
         </div>
-        <div className="p-2 bg-green-100 rounded-lg">
-          <MessageSquare className="w-5 h-5 text-green-600" />
+        <div className="flex-1">
+          <div className="flex items-start gap-2 sm:gap-3 mb-2">
+            <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg flex-shrink-0">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 text-left leading-tight">
+              {question.title}
+              {question.required && <span className="text-red-500 ml-1">*</span>}
+              {!question.required && (
+                <span className="text-xs sm:text-sm text-gray-500 font-normal ml-2">
+                  (optional)
+                </span>
+              )}
+            </h3>
+          </div>
         </div>
-        <h3 className="text-lg font-semibold text-gray-800 text-left">
-          {question.title}
-          {question.required && <span className="text-red-500 ml-1">*</span>}
-          {!question.required && (
-            <span className="text-sm text-gray-500 font-normal ml-2">
-              (optional)
-            </span>
-          )}
-        </h3>
       </div>
       {question.description && (
-        <p className="text-gray-600 text-sm mb-4 ml-11">{question.description}</p>
+        <p className="text-sm text-gray-600 mb-4 pl-10 sm:pl-11">{question.description}</p>
       )}
 
-      <div className="ml-11">
+      <div className="pl-10 sm:pl-11">
         <textarea
           value={(answers[question.id] as string) || ""}
           onChange={(e) => handleFreeTextChange(question.id, e.target.value)}
           placeholder="Deine Antwort hier eingeben..."
-          rows={4}
-          className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors duration-200"
+          rows={3}
+          className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors duration-200 text-sm sm:text-base"
+          style={{ minHeight: '80px' }}
         />
       </div>
     </div>
   );
 
   const renderSingleChoiceQuestion = (question: Question, index: number) => (
-    <div key={question.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+    <div key={question.id} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
       <div className="flex items-start gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
           {index + 1}
         </div>
-        <div className="p-2 bg-purple-100 rounded-lg">
-          <CheckSquare className="w-5 h-5 text-purple-600" />
-        </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800 text-left">
-            {question.title}
-            {question.required && <span className="text-red-500 ml-1">*</span>}
-            {!question.required && (
-              <span className="text-sm text-gray-500 font-normal ml-2">
-                (optional)
-              </span>
-            )}
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-start gap-2 sm:gap-3 mb-2">
+            <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 text-left leading-tight">
+                {question.title}
+                {question.required && <span className="text-red-500 ml-1">*</span>}
+                {!question.required && (
+                  <span className="text-xs sm:text-sm text-gray-500 font-normal ml-2">
+                    (optional)
+                  </span>
+                )}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
               ⚡ Einfachauswahl
             </span>
-            <span className="text-xs text-gray-500">Du kannst nur eine Option auswählen</span>
+            <span className="text-xs text-gray-500 hidden sm:inline">Du kannst nur eine Option auswählen</span>
           </div>
         </div>
       </div>
       {question.description && (
-        <p className="text-gray-600 text-sm mb-4 ml-11">{question.description}</p>
+        <p className="text-sm text-gray-600 mb-4 pl-10 sm:pl-11">{question.description}</p>
       )}
 
-      <div className="space-y-3 ml-11">
+      <div className="space-y-2 sm:space-y-3 pl-10 sm:pl-11">
         {question.options?.map((option, optionIndex) => (
           <label
             key={optionIndex}
-            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-purple-50 cursor-pointer transition-colors duration-200"
+            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-purple-50 cursor-pointer transition-colors duration-200 active:bg-purple-100"
           >
             <input
               type="radio"
@@ -328,9 +342,9 @@ const PollScreen: React.FC = () => {
               value={option}
               checked={answers[question.id] === option}
               onChange={() => handleSingleChoiceChange(question.id, option)}
-              className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+              className="w-4 h-4 sm:w-4 sm:h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
             />
-            <span className="text-gray-700">{option}</span>
+            <span className="text-sm sm:text-base text-gray-700 leading-tight">{option}</span>
           </label>
         ))}
       </div>
@@ -338,46 +352,50 @@ const PollScreen: React.FC = () => {
   );
 
   const renderRatingQuestion = (question: Question, index: number) => (
-    <div key={question.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
+    <div key={question.id} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
           {index + 1}
         </div>
-        <div className="p-2 bg-yellow-100 rounded-lg">
-          <Star className="w-5 h-5 text-yellow-600" />
+        <div className="flex-1">
+          <div className="flex items-start gap-2 sm:gap-3 mb-2">
+            <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 text-left leading-tight">
+              {question.title}
+              {question.required && <span className="text-red-500 ml-1">*</span>}
+              {!question.required && (
+                <span className="text-xs sm:text-sm text-gray-500 font-normal ml-2">
+                  (optional)
+                </span>
+              )}
+            </h3>
+          </div>
         </div>
-        <h3 className="text-lg font-semibold text-gray-800 text-left">
-          {question.title}
-          {question.required && <span className="text-red-500 ml-1">*</span>}
-          {!question.required && (
-            <span className="text-sm text-gray-500 font-normal ml-2">
-              (optional)
-            </span>
-          )}
-        </h3>
       </div>
       {question.description && (
-        <p className="text-gray-600 text-sm mb-4 ml-11">{question.description}</p>
+        <p className="text-sm text-gray-600 mb-4 pl-10 sm:pl-11">{question.description}</p>
       )}
 
-      <div className="ml-11">
-        <div className="flex justify-center gap-2 mb-4">
+      <div className="pl-10 sm:pl-11">
+        <div className="flex justify-center gap-1 sm:gap-2 mb-4">
           {[1, 2, 3, 4, 5].map((rating) => (
             <button
               key={rating}
               onClick={() => handleRatingChange(question.id, rating)}
-              className={`w-14 h-14 rounded-full border-2 flex items-center justify-center font-semibold transition-all hover:scale-110 ${
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center font-semibold transition-all hover:scale-110 active:scale-95 ${
                 (answers[question.id] as number | null) !== null && (answers[question.id] as number) >= rating
                   ? 'border-yellow-500 bg-yellow-500 text-white shadow-lg'
                   : 'border-gray-300 text-gray-600 hover:border-yellow-400 hover:bg-yellow-50'
               }`}
             >
-              <Star className={`w-8 h-8 ${(answers[question.id] as number | null) !== null && (answers[question.id] as number) >= rating ? 'fill-current' : ''}`} />
+              <Star className={`w-6 h-6 sm:w-8 sm:h-8 ${(answers[question.id] as number | null) !== null && (answers[question.id] as number) >= rating ? 'fill-current' : ''}`} />
             </button>
           ))}
         </div>
         
-        <div className="flex justify-between text-sm text-gray-500 mb-2">
+        <div className="flex justify-between text-xs sm:text-sm text-gray-500 mb-2 px-2">
           <span>Sehr schlecht</span>
           <span>Sehr gut</span>
         </div>
@@ -394,31 +412,35 @@ const PollScreen: React.FC = () => {
   );
 
   const renderYesNoQuestion = (question: Question, index: number) => (
-    <div key={question.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
+    <div key={question.id} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0">
           {index + 1}
         </div>
-        <div className="p-2 bg-indigo-100 rounded-lg">
-          <CheckSquare className="w-5 h-5 text-indigo-600" />
+        <div className="flex-1">
+          <div className="flex items-start gap-2 sm:gap-3 mb-2">
+            <div className="p-1.5 sm:p-2 bg-indigo-100 rounded-lg flex-shrink-0">
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 text-left leading-tight">
+              {question.title}
+              {question.required && <span className="text-red-500 ml-1">*</span>}
+              {!question.required && (
+                <span className="text-xs sm:text-sm text-gray-500 font-normal ml-2">
+                  (optional)
+                </span>
+              )}
+            </h3>
+          </div>
         </div>
-        <h3 className="text-lg font-semibold text-gray-800 text-left">
-          {question.title}
-          {question.required && <span className="text-red-500 ml-1">*</span>}
-          {!question.required && (
-            <span className="text-sm text-gray-500 font-normal ml-2">
-              (optional)
-            </span>
-          )}
-        </h3>
       </div>
       {question.description && (
-        <p className="text-gray-600 text-sm mb-4 ml-11">{question.description}</p>
+        <p className="text-sm text-gray-600 mb-4 pl-10 sm:pl-11">{question.description}</p>
       )}
 
-      <div className="ml-11">
-        <div className="flex gap-4 justify-center">
-          <label className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all min-w-[120px] justify-center ${
+      <div className="pl-10 sm:pl-11">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-center">
+          <label className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all min-w-0 sm:min-w-[120px] justify-center active:scale-95 ${
             answers[question.id] === true 
               ? 'border-green-500 bg-green-50 shadow-md' 
               : 'border-gray-200 hover:border-green-400 hover:bg-green-50'
@@ -431,13 +453,13 @@ const PollScreen: React.FC = () => {
               onChange={() => handleYesNoChange(question.id, true)}
               className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
             />
-            <ThumbsUp className={`w-5 h-5 ${answers[question.id] === true ? 'text-green-600' : 'text-gray-400'}`} />
-            <span className={`font-medium ${answers[question.id] === true ? 'text-green-800' : 'text-gray-700'}`}>
+            <ThumbsUp className={`w-4 h-4 sm:w-5 sm:h-5 ${answers[question.id] === true ? 'text-green-600' : 'text-gray-400'}`} />
+            <span className={`font-medium text-sm sm:text-base ${answers[question.id] === true ? 'text-green-800' : 'text-gray-700'}`}>
               Ja
             </span>
           </label>
           
-          <label className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all min-w-[120px] justify-center ${
+          <label className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all min-w-0 sm:min-w-[120px] justify-center active:scale-95 ${
             answers[question.id] === false 
               ? 'border-red-500 bg-red-50 shadow-md' 
               : 'border-gray-200 hover:border-red-400 hover:bg-red-50'
@@ -450,8 +472,8 @@ const PollScreen: React.FC = () => {
               onChange={() => handleYesNoChange(question.id, false)}
               className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
             />
-            <ThumbsDown className={`w-5 h-5 ${answers[question.id] === false ? 'text-red-600' : 'text-gray-400'}`} />
-            <span className={`font-medium ${answers[question.id] === false ? 'text-red-800' : 'text-gray-700'}`}>
+            <ThumbsDown className={`w-4 h-4 sm:w-5 sm:h-5 ${answers[question.id] === false ? 'text-red-600' : 'text-gray-400'}`} />
+            <span className={`font-medium text-sm sm:text-base ${answers[question.id] === false ? 'text-red-800' : 'text-gray-700'}`}>
               Nein
             </span>
           </label>
@@ -463,7 +485,7 @@ const PollScreen: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Umfrage wird geladen...</h2>
@@ -505,7 +527,7 @@ const PollScreen: React.FC = () => {
   // Waiting room (survey not started)
   if (survey.status === 'ready') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-6 py-8">
             <h1 className="text-4xl font-bold text-gray-900 text-center mb-4">
@@ -559,7 +581,7 @@ const PollScreen: React.FC = () => {
   // Survey finished
   if (survey.status === 'finished') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-600" />
@@ -576,7 +598,7 @@ const PollScreen: React.FC = () => {
   // Success state
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-6">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -602,23 +624,23 @@ const PollScreen: React.FC = () => {
 
   // Main survey form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 text-center mb-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 text-center mb-2 sm:mb-4">
             {survey.title}
           </h1>
           {survey.description && (
-            <p className="text-gray-600 text-center mb-4">{survey.description}</p>
+            <p className="text-sm sm:text-base text-gray-600 text-center mb-2 sm:mb-4">{survey.description}</p>
           )}
           <div className="text-center">
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               {supportedQuestions.length} Frage{supportedQuestions.length !== 1 ? "n" : ""} • 
               {" "}{supportedQuestions.filter((q) => q.required).length} davon Pflichtfragen
             </p>
             {unsupportedCount > 0 && (
-              <p className="text-sm text-amber-600 mt-2">
+              <p className="text-xs sm:text-sm text-amber-600 mt-2">
                 ⚠️ {unsupportedCount} Frage(n) werden in dieser Version noch nicht unterstützt
               </p>
             )}
@@ -627,8 +649,8 @@ const PollScreen: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        <div className="space-y-4 sm:space-y-6">
           {supportedQuestions.map((question, index) => {
             if (question.type === 'multiple_choice') {
               return renderMultipleChoiceQuestion(question, index);
@@ -645,11 +667,11 @@ const PollScreen: React.FC = () => {
           })}
 
           {/* Submit Button */}
-          <div className="flex flex-col items-center pt-6">
+          <div className="flex flex-col items-center pt-4 sm:pt-6">
             {errorMessage && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 mb-4 w-full">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <p className="text-red-700">{errorMessage}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 flex items-start gap-3 mb-4 w-full">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm sm:text-base text-red-700">{errorMessage}</p>
               </div>
             )}
 
@@ -657,7 +679,7 @@ const PollScreen: React.FC = () => {
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center gap-3 ${
+              className={`w-full sm:w-auto px-6 sm:px-8 py-4 sm:py-3 rounded-lg font-semibold text-base sm:text-lg transition-all duration-200 flex items-center justify-center gap-3 ${
                 isSubmitting
                   ? "bg-gray-400 cursor-not-allowed text-white"
                   : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
