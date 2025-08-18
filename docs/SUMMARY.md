@@ -1,4 +1,4 @@
 # Table of contents
 
-- [Welcome](docs/Welcome-QuickPollDocumentation.md)
+- [Willkommen bei QuickPoll](docs/welcome.md)
 - [Erste Schritte](docs/erste-schritte.md)
