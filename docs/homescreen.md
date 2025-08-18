@@ -1,2 +1,2 @@
 #Homescreen
-![Homescreen](images/homescreen.png)
+![Homescreen](./images/homescreen.png)
