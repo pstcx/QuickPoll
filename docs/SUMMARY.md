@@ -1,4 +1,5 @@
 # Table of contents
 
-- [Willkommen bei QuickPoll](welcome.md)
-- [HomeScreen](docs/homescreen.md)
+* [README](README.md)
+* [Willkommen bei QuickPoll](welcome.md)
+* [HomeScreen](homescreen.md)
