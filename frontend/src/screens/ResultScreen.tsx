@@ -508,7 +508,7 @@ const ResultScreen: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
         <div className="flex items-center justify-center min-h-screen">
           <div className="flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -522,7 +522,7 @@ const ResultScreen: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center max-w-md mx-auto px-6">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -545,54 +545,55 @@ const ResultScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                  <TrendingUp className="w-8 h-8 text-blue-600" />
-                  {survey?.title || "Umfrage"}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                  <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 flex-shrink-0" />
+                  <span className="truncate">{survey?.title || "Umfrage"}</span>
                 </h1>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-mono">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full font-mono inline-block w-fit">
                   ID: {pollId}
                 </span>
-                <p className="text-gray-600 flex items-center gap-2">
+                <p className="text-sm sm:text-base text-gray-600 flex items-center gap-2 flex-wrap">
                   {survey?.status === 'finished' ? (
                     <>
-                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                      Umfrage beendet • {responses.length} Antworten
+                      <div className="w-2 h-2 bg-gray-500 rounded-full flex-shrink-0"></div>
+                      <span>Umfrage beendet • {responses.length} Antworten</span>
                     </>
                   ) : (
                     <>
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      Live • {waitingParticipants} Teilnehmer aktiv • {responses.length} Antworten
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse flex-shrink-0"></div>
+                      <span>Live • {waitingParticipants} Teilnehmer • {responses.length} Antworten</span>
                     </>
                   )}
                   {/* WebSocket Status - nur bei aktiven Umfragen anzeigen */}
                   {survey?.status !== 'finished' && (
                     isConnected ? (
                       <span title="Live-Verbindung aktiv">
-                        <Wifi className="w-4 h-4 text-green-500" />
+                        <Wifi className="w-4 h-4 text-green-500 flex-shrink-0" />
                       </span>
                     ) : (
                       <span title="Verbindung unterbrochen">
-                        <WifiOff className="w-4 h-4 text-red-500" />
+                        <WifiOff className="w-4 h-4 text-red-500 flex-shrink-0" />
                       </span>
                     )
                   )}
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              {/* Export Button - nur auf Desktop anzeigen */}
               <button
                 onClick={handleExportResults}
                 disabled={isExporting}
-                className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 ${
+                className={`hidden sm:flex px-4 py-2 rounded-lg transition-all duration-200 font-medium items-center gap-2 text-base ${
                   isExporting
                     ? "bg-gray-400 cursor-not-allowed text-white"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
@@ -600,12 +601,12 @@ const ResultScreen: React.FC = () => {
               >
                 {isExporting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
                     Exportiere...
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4" />
+                    <Download className="w-4 h-4 flex-shrink-0" />
                     Ergebnisse exportieren
                   </>
                 )}
@@ -614,7 +615,7 @@ const ResultScreen: React.FC = () => {
                 <button
                   onClick={handleEndPoll}
                   disabled={isEndingPoll}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 ${
+                  className={`px-4 sm:px-4 py-3 sm:py-2 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 text-base sm:text-base touch-manipulation w-full sm:w-auto ${
                     isEndingPoll
                       ? "bg-gray-400 cursor-not-allowed text-white"
                       : "bg-red-600 hover:bg-red-700 text-white"
@@ -622,11 +623,15 @@ const ResultScreen: React.FC = () => {
                 >
                   {isEndingPoll ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Beende...
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                      <span className="hidden sm:inline">Beende...</span>
+                      <span className="sm:hidden">Beende...</span>
                     </>
                   ) : (
-                    "Poll beenden"
+                    <>
+                      <span className="hidden sm:inline">Poll beenden</span>
+                      <span className="sm:hidden">Poll beenden</span>
+                    </>
                   )}
                 </button>
               )}
@@ -636,16 +641,16 @@ const ResultScreen: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="space-y-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="space-y-4 sm:space-y-8">
           {processedQuestions.map((question, index) => (
             <div
               key={question.id}
               className="animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
+              <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-bold flex-shrink-0">
                   {index + 1}
                 </div>
                 <div className="h-px bg-gradient-to-r from-blue-200 to-transparent flex-1" />
@@ -660,24 +665,24 @@ const ResultScreen: React.FC = () => {
       {/* Export Confirmation Modal */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all duration-300 ease-out animate-modal-enter">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-4 sm:p-6 transform transition-all duration-300 ease-out animate-modal-enter">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
               Bist du dir sicher?
             </h3>
-            <p className="text-gray-600 mb-6 leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
               Willst du wirklich schon die Ergebnisse exportieren, bevor die
               Poll beendet wurde?
             </p>
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
               <button
                 onClick={cancelExport}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium text-sm sm:text-base touch-manipulation"
               >
                 Abbrechen
               </button>
               <button
                 onClick={confirmExport}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:text-base touch-manipulation"
               >
                 Bestätigen
               </button>

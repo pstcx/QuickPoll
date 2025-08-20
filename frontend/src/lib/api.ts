@@ -3,7 +3,7 @@
 import { getSessionId } from './session';
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://quick-poll-a49h.vercel.app' 
+  ? 'https://quickpoll.up.railway.app' 
   : 'http://localhost:8000';
 
 // Type Definitions

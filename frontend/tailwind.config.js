@@ -4,5 +4,9 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}", // <- Wichtig für Vite
   ],
-  // ... rest der config
+  darkMode: 'class', // Nur aktivieren wenn explizit eine "dark" Klasse gesetzt wird
+  theme: {
+    extend: {},
+  },
+  plugins: [],
 }

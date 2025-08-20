@@ -172,10 +172,11 @@ export default function CreateScreen() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto font-sans text-gray-800">
-      <h2 className="text-2xl font-bold mb-4 text-[#093a80]">
-        Neue Umfrage erstellen
-      </h2>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="p-6 max-w-2xl mx-auto font-sans text-gray-800">
+        <h2 className="text-3xl font-extrabold mb-8 text-[#093a80]">
+          Neue Umfrage erstellen
+        </h2>
 
       {/* Umfrage-Titel */}
       <input
@@ -187,7 +188,7 @@ export default function CreateScreen() {
 
       {/* Beschreibung */}
       <textarea
-        className="border border-gray-300 p-2 w-full mb-6 rounded-md focus:border-[#093a80] focus:ring-1 focus:ring-[#093a80] outline-none"
+        className="border border-gray-300 p-2 w-full mb-8 rounded-md focus:border-[#093a80] focus:ring-1 focus:ring-[#093a80] outline-none"
         placeholder="Beschreibung der Umfrage (optional)"
         rows={3}
         value={description}
@@ -283,7 +284,7 @@ export default function CreateScreen() {
       )}
 
       {/* Neue Fragen hinzufügen */}
-      <div className="mb-6">
+      <div className="my-6">
         <h3 className="text-lg font-medium text-[#093a80] mb-3">Frage hinzufügen</h3>
         <div className="flex flex-wrap gap-3">
           <button
@@ -347,6 +348,7 @@ export default function CreateScreen() {
         onCancel={closeErrorDialog}
         variant="warning"
       />
+      </div>
     </div>
   );
 }
